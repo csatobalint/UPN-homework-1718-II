@@ -11,13 +11,11 @@ y(:,1)=[c1 c2]';
 sol4=zeros(2,N+1);
 sol5=zeros(2,N+1);
 
-% for j=1:N
-while t < 10
-    h = min(h, 2-t);
-    
-    Y_1      = h*fvbr(t(j),y(:,j)                                                                   ,m,k,s,f0,w);
-    Y_2      = h*fvbr(t(j)+1/4*h, y(:,j)+1/4*Y_1                                               ,m,k,s,f0,w);
-    Y_3      = h*fvbr(t(j)+3/8*h, y(:,j)+3/32*Y_1+9/32*Y_2            ,m,k,s,f0,w);
+for j=1:N
+    %h = min(h, 2-t);
+    Y_1      = h*fvbr(t(j),y(:,j),m,k,s,f0,w);
+    Y_2      = h*fvbr(t(j)+1/4*h, y(:,j)+1/4*Y_1,m,k,s,f0,w);
+    Y_3      = h*fvbr(t(j)+3/8*h, y(:,j)+3/32*Y_1+9/32*Y_2,m,k,s,f0,w);
     Y_4      = h*fvbr(t(j)+12/13*h, y(:,j)+1932/2197*Y_1-7200/2197*Y_2+7296/2197*Y_3           ,m,k,s,f0,w);
     Y_5      = h*fvbr(t(j)+h, y(:,j)+439/216*Y_1-8*Y_2+3680/513*Y_3-845/4104*Y_4               ,m,k,s,f0,w);
     Y_6      = h*fvbr(t(j)+1/2*h, y(:,j)+8/27*Y_1-2*Y_2+3544/2565*Y_3+1859/4104*Y_4-11/40*Y_5  ,m,k,s,f0,w);
