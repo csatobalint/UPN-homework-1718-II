@@ -21,7 +21,7 @@ c1=2;
 c2=2;
 
 %timestep
-h=0.01;
+h=0.001;
 N=(T-t0)/h;
 
 %forced vibration
