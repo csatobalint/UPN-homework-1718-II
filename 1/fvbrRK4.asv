@@ -36,13 +36,14 @@ while t<T
         delta=1.2;
         h = delta*h;
     elseif R>eps*100
-        delta=0.8;
-       h = delta*h;      
-    else        
-       t = t+h;
+        
+        t = t+h;
         time(j+1)=t;
         y(:,j+1) = sol4(:,j+1);
-        j=j+1; 
+        j=j+1;        
+    else        
+       delta=0.8;
+       h = delta*h;
     end
 
 end
