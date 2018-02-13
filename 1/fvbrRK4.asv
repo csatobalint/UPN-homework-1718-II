@@ -1,6 +1,6 @@
 function fvbrRK4(T,N,m,k,s,f0,w,c1,c2)
 
-h=0.05; % stepsize
+h=0.005; % stepsize
 time=linspace(0,T,N+1); % grid
 t=0;
 eps=10e-4;
@@ -41,11 +41,10 @@ while t<T
         %delta=0.9;
         %h = delta*h;      
     else        
-        
         y(:,j+1) = sol4(:,j+1);
         H(j)=h;
         t = t+h;
-        time(j)=t;
+        time(j+1)=t;
         j=j+1;
         h = delta*h;
     end
@@ -55,13 +54,19 @@ end
 
 figure
 subplot(1,2,1)
-plot(time,y(1,:),'red')
+plot(time([1:j]),y(1,[1:j]),'red')
 xlabel('Time')
 subplot(1,2,2)
-plot(time,H)
-title('Phase portrait')
+plot(time([1:j]),H([1:j]))
+title('Time step')
 time([1:j])
 y(1,[1:j])
+
+% Getting the amplitude of the vibration
+data=time([1,2400:end]);
+ampl=max
+
+
 
 
 end

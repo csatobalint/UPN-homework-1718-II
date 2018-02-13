@@ -1,4 +1,4 @@
-function fvbrRK4(T,N,m,k,s,f0,w,c1,c2)
+function amp = fvbrRK4(T,N,m,k,s,f0,w,c1,c2)
 
 h=0.005; % stepsize
 time=linspace(0,T,N+1); % grid
@@ -52,18 +52,21 @@ while t<T
 
 end
 
-figure
-subplot(1,3,1)
-plot(time([1:j]),y(1,[1:j]),'red')
-xlabel('Time')
-subplot(1,3,2)
-plot(time([1:j]),H([1:j]))
-title('Time step')
-subplot(1,3,3)
-plot(time([1:j]),H([1:j]))
-title('Phase portrait')
-time([1:j])
-y(1,[1:j])
+% figure
+% subplot(1,2,1)
+% plot(time([1:j]),y(1,[1:j]),'red')
+% xlabel('Time')
+% subplot(1,2,2)
+% plot(time([1:j]),H([1:j]))
+% title('Time step')
+% time([1:j])
+% y(1,[1:j])
+
+% Getting the amplitude of the vibration
+amp_data=y(1,2400:end);
+amp=max(amp_data);
+
+
 
 
 end
