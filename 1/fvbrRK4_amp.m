@@ -1,4 +1,4 @@
-function amp = fvbrRK4(T,N,m,k,s,f0,w,c1,c2)
+function amp = fvbrRK4_amp(T,N,m,k,s,f0,w,c1,c2)
 
 h=0.005; % stepsize
 time=linspace(0,T,N+1); % grid
@@ -36,55 +36,50 @@ while t<T
     fprintf('Step %d: t = %6.4f, sol4=%18.15f,sol5=%18.15f,h=%6.4f,R = %10.7f,delta=%10.7f\n',j,t,sol4p,sol5p,h,R,delta);
 
     % 1st solution
-%     delta = 0.84*(eps/R)^(1/4);
-%     if R>=eps
-%         h = delta*h;    
-%     else        
+    delta = 0.84*(eps/R)^(1/4);
+    if R>=eps
+        h = delta*h;    
+    else        
+        y(:,j+1) = sol4(:,j+1);
+        H(j)=h;
+        t = t+h;
+        time(j+1)=t;
+        j=j+1;
+        h = delta*h;
+    end
+
+    % 2nd solution:    
+%     eps=10e-4;
+%     if R<eps
+%         delta=1.05;
 %         y(:,j+1) = sol4(:,j+1);
-%         H(j)=h;
+%         H(j+1)=h;
+%         t = t+h;
+%         time(j+1)=t;
+%         j=j+1;
+%         h = delta*h;
+%         
+%     elseif R>eps*100
+%         delta=0.95;
+%         h = delta*h;      
+%     else
+%         delta=1;
+%         y(:,j+1) = sol4(:,j+1);
+%         H(j+1)=h;
 %         t = t+h;
 %         time(j+1)=t;
 %         j=j+1;
 %         h = delta*h;
 %     end
     
-% 2nd solution:    
-    eps=10e-4;
-    if R<eps
-        delta=1.05;
-        y(:,j+1) = sol4(:,j+1);
-        H(j+1)=h;
-        t = t+h;
-        time(j+1)=t;
-        j=j+1;
-        h = delta*h;
-        
-    elseif R>eps*100
-        delta=0.95;
-        h = delta*h;      
-    else
-        delta=1;
-        y(:,j+1) = sol4(:,j+1);
-        H(j+1)=h;
-        t = t+h;
-        time(j+1)=t;
-        j=j+1;
-        h = delta*h;
-    end
-    
 
 end
 
-figure
-subplot(1,2,1)
-plot(time([1:j]),y(1,[1:j]),'red')
-xlabel('Time')
-ylabel('X[t]')
-subplot(1,2,2)
-plot(time([1:j]),H([1:j]))
-title('Time step')
-xlabel('Time')
-ylabel('h[t]')
+% Getting the amplitude of the vibration
+nonzero=find(y(1,:));
+index=size(nonzero,2);
+amp_data=y(1,(index-200):index);
+amp=max(amp_data);
 
 
 end
