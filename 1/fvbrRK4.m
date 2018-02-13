@@ -3,7 +3,6 @@ function fvbrRK4(T,N,m,k,s,f0,w,c1,c2)
 h=0.005; % stepsize
 time=linspace(0,T,N+1); % grid
 t=0;
-eps=10e-4;
 y=zeros(2,N+1); % numerical solution
 sol4=zeros(2,N+1);
 sol5=zeros(2,N+1);
@@ -30,19 +29,42 @@ while t<T
     sol5(:,j+1) = y(:,j) + 16/135*Y_1+6656/12825*Y_3+28561/56430*Y_4-9/50*Y_5+2/55*Y_6;
     sol5p=sol5(1,j+1);
     R = abs(sol5p-sol4p);   
-    delta = 0.84*(eps/R)^(1/4);
+    
     
     %fprintf('Step %d: t = %6.4f, R = %10.7f,delta=%10.7f\n',j, t,sol4(:,j+1), R,delta);
     fprintf('Step %d: t = %6.4f, sol4=%18.15f,sol5=%18.15f,h=%6.4f,R = %10.7f,delta=%10.7f\n',j,t,sol4p,sol5p,h,R,delta);
-    if R>=eps
-        %delta=1.1;
-        h = delta*h;
-    %elseif R>eps*100
-        %delta=0.9;
-        %h = delta*h;      
-    else        
+
+    % 1st solution
+%     delta = 0.84*(eps/R)^(1/4);
+%     if R>=eps
+%         h = delta*h;    
+%     else        
+%         y(:,j+1) = sol4(:,j+1);
+%         H(j)=h;
+%         t = t+h;
+%         time(j+1)=t;
+%         j=j+1;
+%         h = delta*h;
+%     end
+    % 2nd solution:
+    
+    eps=10e-4;
+    if R<eps
+        delta=1.05;
         y(:,j+1) = sol4(:,j+1);
-        H(j)=h;
+        H(j+1)=h;
+        t = t+h;
+        time(j+1)=t;
+        j=j+1;
+        h = delta*h;
+        
+    elseif R>eps*100
+        delta=0.95;
+        h = delta*h;      
+    else
+        delta=1;
+        y(:,j+1) = sol4(:,j+1);
+        H(j+1)=h;
         t = t+h;
         time(j+1)=t;
         j=j+1;
@@ -53,17 +75,20 @@ while t<T
 end
 
 figure
-subplot(1,3,1)
+subplot(1,2,1)
 plot(time([1:j]),y(1,[1:j]),'red')
 xlabel('Time')
-subplot(1,3,2)
+ylabel('x(t)')
+title('Motion')
+subplot(1,2,2)
 plot(time([1:j]),H([1:j]))
-title('Time step')
-subplot(1,3,3)
-plot(time([1:j]),H([1:j]))
-title('Phase portrait')
-time([1:j])
-y(1,[1:j])
+xlabel('Time')
+ylabel('h[s]')
+title('Step size')
+%subplot(1,3,3)
+%plot(y(1,[1:5:j]),y(2,[1:5:j]))
+%title('Phase portrait')
+%xlabel('Time')
 
 
 end
