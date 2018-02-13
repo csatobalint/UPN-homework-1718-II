@@ -25,10 +25,8 @@ c2=2;
 %N=(T-t0)/h;
 N=20000;
 
-
-%% forced vibration
-
-%[amp, amp_data, time] = fvbrRK4(T,N,m,k,s,f0,w,c1,c2)
+amp = fvbrRK4(T,N,m,k,s,f0,w,c1,c2)
+N=amp/F0
 
 %% For loop for the amplification diagram
 
@@ -42,8 +40,8 @@ end
 figure
 plot(w_list/sqrt(s/m), amp*s/f0, '*')
 title('Amplification diagram')
-ylabel('$\lambda$=\omega','interpreter','latex')
-ylabel('N')
+xlabel('$\lambda=\frac{\omega}{\alpha}$','interpreter','latex')
+xlabel('$N$','interpreter','latex')
 
 %%
 fvbrRK4(T,N,m,k,s,f0,w,c1,c2)
