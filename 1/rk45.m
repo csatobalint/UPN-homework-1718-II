@@ -8,9 +8,10 @@ h = 0.2;
 t = 0;
 w = 0.5;
 i = 0;
+T=10;
 fprintf('Step %d: t = %6.4f, w = %18.15f\n', i, t, w);
-while t<2
-    h = min(h, 2-t);
+while t<T
+    h = min(h, T-t);
     k1 = h*f(t,w);
     k2 = h*f(t+h/4, w+k1/4);
     k3 = h*f(t+3*h/8, w+3*k1/32+9*k2/32);
@@ -25,9 +26,10 @@ while t<2
         t = t+h;
         w = w1;
         i = i+1;
-        fprintf('Step %d: t = %6.4f, w = %18.15f\n', i, t, w);
+        %fprintf('Step %d: t = %6.4f, w = %18.15f,delta=%6.4f\n', i, t, w,delta);
         h = delta*h;
     else
         h = delta*h;
     end
+    fprintf('Step %d: t = %6.4f,h=%6.4f,R = %10.7f,delta=%10.7f\n',i,t,h,R,delta);
 end

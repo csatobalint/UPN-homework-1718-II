@@ -1,12 +1,14 @@
 function fvbrRK4(T,N,m,k,s,f0,w,c1,c2)
 
-h=T/N; % stepsize
+h=0.05; % stepsize
 time=linspace(0,T,N+1); % grid
 t=0;
-eps=0.01;
+eps=10e-4;
 y=zeros(2,N+1); % numerical solution
 sol4=zeros(2,N+1);
 sol5=zeros(2,N+1);
+H=zeros(1,N+1);
+
 delta=1;
 % IC
 y(:,1)=[c1 c2]';
@@ -27,24 +29,27 @@ while t<T
     % 5th order approximation:
     sol5(:,j+1) = y(:,j) + 16/135*Y_1+6656/12825*Y_3+28561/56430*Y_4-9/50*Y_5+2/55*Y_6;
     sol5p=sol5(1,j+1);
-    R = abs(sol5(1,j+1)-sol4(1,j+1))/abs(sol5(1,j+1));   
-    %delta = 0.84*(eps/R)^(1/4);
+    R = abs(sol5p-sol4p);   
+    delta = 0.84*(eps/R)^(1/4);
     
     %fprintf('Step %d: t = %6.4f, R = %10.7f,delta=%10.7f\n',j, t,sol4(:,j+1), R,delta);
     fprintf('Step %d: t = %6.4f, sol4=%18.15f,sol5=%18.15f,h=%6.4f,R = %10.7f,delta=%10.7f\n',j,t,sol4p,sol5p,h,R,delta);
-    if R<=eps
-        delta=1.2;
+    if R>=eps
+        %delta=1.1;
         h = delta*h;
-    elseif R>eps*100
-        
-        t = t+h;
-        time(j+1)=t;
-        y(:,j+1) = sol4(:,j+1);
-        j=j+1;        
+    %elseif R>eps*100
+        %delta=0.9;
+        %h = delta*h;      
     else        
-       delta=0.8;
-       h = delta*h;
+        
+        y(:,j+1) = sol4(:,j+1);
+        H(j)=h;
+        t = t+h;
+        time(j)=t;
+        j=j+1;
+        h = delta*h;
     end
+    
 
 end
 
@@ -53,9 +58,10 @@ subplot(1,2,1)
 plot(time,y(1,:),'red')
 xlabel('Time')
 subplot(1,2,2)
-plot(y(1,:),y(2,:))
+plot(time,H)
 title('Phase portrait')
-y(1,end)
+time([1:j])
+y(1,[1:j])
 
 
 end

@@ -1,13 +1,13 @@
 %% UNP-homework-I
 
-clear variables;
+clear all;
 close all;
 clc;
 format long
 
 %time range
 t0=0;
-T=1;
+T=0.02;
 
 %parameters of the mechanical system
 m=2;
@@ -21,8 +21,8 @@ c1=2;
 c2=2;
 
 %timestep
-h=0.01;
-N=(T-t0)/h;
+%h=0.005;
+%N=(T-t0)/h;
 N=20000;
 
 %forced vibration
