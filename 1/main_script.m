@@ -33,5 +33,19 @@ c2=2;
 %N=(T-t0)/h;
 N=5000;
 
-%forced vibration
-fvbrRK4(T,N,m,k,s,f0,w,c1,c2)
+%% forced vibration
+
+amp = fvbrRK4(T,N,m,k,s,f0,w,c1,c2)
+
+%% For loop for the amplification diagram
+
+ii=1;
+for w = 2:0.5:10
+    amp(ii)= fvbrRK4(T,N,m,k,s,f0,w,c1,c2);
+    w_list(ii)=w;
+    ii=ii+1;
+end
+
+figure 
+plot(w_list, amp, '*')
+

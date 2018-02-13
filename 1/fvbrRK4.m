@@ -1,4 +1,4 @@
-function fvbrRK4(T,N,m,k,s,f0,w,c1,c2)
+function amp = fvbrRK4(T,N,m,k,s,f0,w,c1,c2)
 
 h=0.005; % stepsize
 time=linspace(0,T,N+1); % grid
@@ -89,6 +89,11 @@ title('Step size')
 %plot(y(1,[1:5:j]),y(2,[1:5:j]))
 %title('Phase portrait')
 %xlabel('Time')
+
+% Getting the amplitude of the vibration
+amp_data=y(1,2400:end);
+amp=max(amp_data);
+
 
 
 end

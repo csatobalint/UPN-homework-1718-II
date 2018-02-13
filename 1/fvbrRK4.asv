@@ -66,17 +66,20 @@ while t<T
 end
 
 figure
-subplot(1,3,1)
+subplot(1,2,1)
 plot(time([1:j]),y(1,[1:j]),'red')
 xlabel('Time')
-subplot(1,3,2)
+subplot(1,2,2)
 plot(time([1:j]),H([1:j]))
 title('Time step')
-subplot(1,3,3)
-plot(time([1:j]),H([1:j]))
-title('Phase portrait')
 time([1:j])
 y(1,[1:j])
+
+% Getting the amplitude of the vibration
+data=time([1,2400:end]);
+ampl=max
+
+
 
 
 end
