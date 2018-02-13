@@ -63,8 +63,13 @@ end
 % y(1,[1:j])
 
 % Getting the amplitude of the vibration
-amp_data=y(1,2400:end);
+nonzero=find(y(1,:));
+index=size(nonzero,2);
+amp_data=y(1,(index-200):index);
 amp=max(amp_data);
+
+y(1,:);
+
 
 
 

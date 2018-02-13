@@ -1,4 +1,4 @@
-function fvbrRK4(T,N,m,k,s,f0,w,c1,c2)
+function [amp,amp_data, time] = fvbrRK4(T,N,m,k,s,f0,w,c1,c2)
 
 h=0.005; % stepsize
 time=linspace(0,T,N+1); % grid
@@ -63,8 +63,13 @@ time([1:j])
 y(1,[1:j])
 
 % Getting the amplitude of the vibration
-data=time([1,2400:end]);
-ampl=max
+nonzero=find(y(1,:));
+index=size(nonzero,2);
+amp_data=y(1,(index-200):index);
+amp=max(amp_data);
+
+y(1,:);
+% amp=ax(amp_data);
 
 
 

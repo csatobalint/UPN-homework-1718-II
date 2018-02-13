@@ -7,14 +7,14 @@ format long
 
 %time range
 t0=0;
-T=100;
+T=150;
 
 %parameters of the mechanical system
 m=2;
 k=0.2;
 s=100;
 f0=60;
-w=5;
+w=2;
 
 %initial conditions
 c1=2;
@@ -27,7 +27,7 @@ N=20000;
 
 %% forced vibration
 
-amp = fvbrRK4(T,N,m,k,s,f0,w,c1,c2)
+% [amp, amp_data, time] = fvbrRK4(T,N,m,k,s,f0,w,c1,c2)
 
 %% For loop for the amplification diagram
 
@@ -38,6 +38,6 @@ for w = 2:0.5:10
     ii=ii+1;
 end
 
-figure 
-plot(w_list, amp, '*')
+
+plot(w_list/sqrt(s/m), amp*s/f0, '*')
 
