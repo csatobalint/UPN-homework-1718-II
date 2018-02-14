@@ -33,7 +33,7 @@ while t<T
     delta = 0.84*(eps/R)^(1/4);
     
     %fprintf('Step %d: t = %6.4f, R = %10.7f,delta=%10.7f\n',j, t,sol4(:,j+1), R,delta);
-    fprintf('Step %d: t = %6.4f, sol4=%18.15f,sol5=%18.15f,h=%6.4f,R = %10.7f,delta=%10.7f\n',j,t,sol4p,sol5p,h,R,delta);
+    %fprintf('Step %d: t = %6.4f, sol4=%18.15f,sol5=%18.15f,h=%6.4f,R = %10.7f,delta=%10.7f\n',j,t,sol4p,sol5p,h,R,delta);
 
     % 1st solution: optimized timestep
     delta = 0.84*(eps/R)^(1/4);
@@ -75,10 +75,10 @@ while t<T
 
 end
 
-figure
+% figure
 subplot(1,2,1)
 plot(time([1:j]),y(1,[1:j]),'red')
-title('Motion function')
+title('Motion function at the last omega value')
 xlabel('$t$','interpreter','latex')
 ylabel('$x[t]$','interpreter','latex')
 subplot(1,2,2)
