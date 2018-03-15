@@ -1,78 +1,96 @@
-function fvbrRK4(T,N,m,k,s,f0,w,c1,c2)
+function amp = fvbrRK4(T,N,m,k,s,f0,w,c1,c2)
 
-h=T/N; % stepsize
-t=linspace(0,T,N+1); % grid
+h=0.005; % stepsize
+time=linspace(0,T,N+1); % grid
+t=0;
+eps=10e-4;
 y=zeros(2,N+1); % numerical solution
-epsilon=10^-4;
-
-% RK4:
-y(:,1)=[c1 c2]';
-% corr=1;
 sol4=zeros(2,N+1);
 sol5=zeros(2,N+1);
+H=zeros(1,N+1);
 
-% for j=1:N
-while t < 10
-    h = min(h, 2-t);
-    
-    Y_1      = h*fvbr(t(j),y(:,j)                                                                   ,m,k,s,f0,w);
-    Y_2      = h*fvbr(t(j)+1/4*h, y(:,j)+1/4*Y_1                                               ,m,k,s,f0,w);
-    Y_3      = h*fvbr(t(j)+3/8*h, y(:,j)+3/32*Y_1+9/32*Y_2            ,m,k,s,f0,w);
-    Y_4      = h*fvbr(t(j)+12/13*h, y(:,j)+1932/2197*Y_1-7200/2197*Y_2+7296/2197*Y_3           ,m,k,s,f0,w);
-    Y_5      = h*fvbr(t(j)+h, y(:,j)+439/216*Y_1-8*Y_2+3680/513*Y_3-845/4104*Y_4               ,m,k,s,f0,w);
-    Y_6      = h*fvbr(t(j)+1/2*h, y(:,j)+8/27*Y_1-2*Y_2+3544/2565*Y_3+1859/4104*Y_4-11/40*Y_5  ,m,k,s,f0,w);
-    
+delta=1;
+% IC
+y(:,1)=[c1 c2]';
+%i = 0;
+j=1;
+while t<T
+    h=min(h,T-t);
+    Y_1      = h*fvbr(t,y(:,j),m,k,s,f0,w);
+    Y_2      = h*fvbr(t+1/4*h, y(:,j)+1/4*Y_1,m,k,s,f0,w);
+    Y_3      = h*fvbr(t+3/8*h, y(:,j)+3/32*Y_1+9/32*Y_2,m,k,s,f0,w);
+    Y_4      = h*fvbr(t+12/13*h, y(:,j)+1932/2197*Y_1-7200/2197*Y_2+7296/2197*Y_3           ,m,k,s,f0,w);
+    Y_5      = h*fvbr(t+h, y(:,j)+438/216*Y_1-8*Y_2+3680/513*Y_3-845/4104*Y_4               ,m,k,s,f0,w);
+    Y_6      = h*fvbr(t+1/2*h, y(:,j)+8/27*Y_1-2*Y_2+3544/2565*Y_3+1859/4104*Y_4-11/40*Y_5  ,m,k,s,f0,w);
     
     % 4th order approximation:
     sol4(:,j+1) = y(:,j) + 25/216*Y_1+1408/2565*Y_3+2197/4101*Y_4-1/5*Y_5;
+    sol4p=sol4(1,j+1);
     % 5th order approximation:
-    sol5(:,j+1) = y(:,j) + 16/135*Y_1+6656/12.825*Y_3+28.561/56.430*Y_4-9/50*Y_5+2/55*Y_6;
-    % Error in solution (for y(:,j+1) between 4th & 5th order RK.)
-%     error = abs(max(sol5(:,j+1)-y(:,j+1)));
-    R = abs(max(sol5(:,j+1)-y(:,j+1)))/h;   
-    delta = 0.84*(epsilon/R)^(1/4);
+    sol5(:,j+1) = y(:,j) + 16/135*Y_1+6656/12825*Y_3+28561/56430*Y_4-9/50*Y_5+2/55*Y_6;
+    sol5p=sol5(1,j+1);
+    R = abs(sol5p-sol4p);   
+    delta = 0.84*(eps/R)^(1/4);
     
-    if R<=epsilon
-        t = t+h;
+    %fprintf('Step %d: t = %6.4f, R = %10.7f,delta=%10.7f\n',j, t,sol4(:,j+1), R,delta);
+    %fprintf('Step %d: t = %6.4f, sol4=%18.15f,sol5=%18.15f,h=%6.4f,R = %10.7f,delta=%10.7f\n',j,t,sol4p,sol5p,h,R,delta);
+
+    % 1st solution: optimized timestep
+    delta = 0.84*(eps/R)^(1/4);
+    if R>=eps
+        h = delta*h;    
+    else        
         y(:,j+1) = sol4(:,j+1);
+        H(j)=h;
+        t = t+h;
+        time(j+1)=t;
         j=j+1;
-        h = delta*h;
-    else 
         h = delta*h;
     end
     
-%     if      10^(-4) < error < 10^(-3)    % The solution is proper, we can move on
-%         corr=1;
-%         
-%     elseif  error > 10^(-3)          % The sol. is inaccurate, we're halving the time-step & recalc. the sol. Then move on
-%         corr=0.85;
-%         
-%         Y_1      = h*fvbr(t(j),y(:,j)                                                              ,m,k,s,f0,w);
-%         Y_2      = h*fvbr(t(j)+1/4*corr*h, y(:,j)+1/4*Y_1                                               ,m,k,s,f0,w);
-%         Y_3      = h*fvbr(t(j)+3/8*corr*h, y(:,j)+3/32*Y_1+9/32*Y_2            ,m,k,s,f0,w);
-%         Y_4      = h*fvbr(t(j)+12/13*corr*h, y(:,j)+1932/2197*Y_1-7200/2197*Y_2+7296/2197*Y_3           ,m,k,s,f0,w);
-%         Y_5      = h*fvbr(t(j)+corr*h, y(:,j)+439/216*Y_1-8*Y_2+3680/513*Y_3-845/4104*Y_4               ,m,k,s,f0,w);
-%         Y_6      = h*fvbr(t(j)+1/2*corr*h, y(:,j)+8/27*Y_1-2*Y_2+3544/2565*Y_3+1859/4104*Y_4-11/40*Y_5  ,m,k,s,f0,w);
-% %       y(:,j+1) = y(:,j) + 25/216*Y_1+1408/2565*Y_3+2197/4101*Y_4-1/5*Y_5;
-%         y(:,j+1) = y(:,j) + 16/135*Y_1+6656/12.825*Y_3+28.561/56.430*Y_4-9/50*Y_5+2/55*Y_6;
-%                 
-%     else                            % The sol. is too accurate, we're duplicating the time-step but no recalc.
-%         corr=1.2;
-%         
-%     end
+% % 2nd solution:    
+%     eps=10e-4;
+%     if R<eps
+%         delta=1.05;
+%         y(:,j+1) = sol4(:,j+1);
+%         H(j+1)=h;
+%         t = t+h;
+%         time(j+1)=t;
 %         j=j+1;
-       
+%         h = delta*h;
+%         
+%     elseif R>eps*100
+%         delta=0.95;
+%         h = delta*h;      
+%     else
+%         delta=1;
+%         y(:,j+1) = sol4(:,j+1);
+%         H(j+1)=h;
+%         t = t+h;
+%         time(j+1)=t;
+%         j=j+1;
+%         h = delta*h;
+%     end
     
+
 end
 
-
-figure
+% figure
 subplot(1,2,1)
-plot(t,y(1,:),'red')
-xlabel('Time')
+plot(time([1:j]),y(1,[1:j]),'red')
+title('Motion function at the last omega value')
+xlabel('$t$','interpreter','latex')
+ylabel('$x[t]$','interpreter','latex')
 subplot(1,2,2)
-plot(y(1,:),y(2,:))
-title('Phase portrait')
-% y(1,end)
+plot(time([1:j]),H([1:j]))
+title('Adaptive time step')
+xlabel('$t$','interpreter','latex')
+ylabel('$h[t]$','interpreter','latex')
+
+nonzero=find(y(1,:));
+index=size(nonzero,2);
+amp_data=y(1,(index-200):index);
+amp=max(amp_data);
+
 
 end
