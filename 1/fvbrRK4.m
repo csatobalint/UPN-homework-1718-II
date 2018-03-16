@@ -32,37 +32,13 @@ while t<T
     
     
     %fprintf('Step %d: t = %6.4f, R = %10.7f,delta=%10.7f\n',j, t,sol4(:,j+1), R,delta);
-    fprintf('Step %d: t = %6.4f, sol4=%18.15f,sol5=%18.15f,h=%6.4f,R = %10.7f,delta=%10.7f\n',j,t,sol4p,sol5p,h,R,delta);
+    %fprintf('Step %d: t = %6.4f, sol4=%18.15f,sol5=%18.15f,h=%6.4f,R = %10.7f,delta=%10.7f\n',j,t,sol4p,sol5p,h,R,delta);
 
-    % 1st solution
-%     delta = 0.84*(eps/R)^(1/4);
-%     if R>=eps
-%         h = delta*h;    
-%     else        
-%         y(:,j+1) = sol4(:,j+1);
-%         H(j)=h;
-%         t = t+h;
-%         time(j+1)=t;
-%         j=j+1;
-%         h = delta*h;
-%     end
-    % 2nd solution:
-    
-    eps=10e-4;
-    if R<eps
-        delta=1.05;
-        y(:,j+1) = sol4(:,j+1);
-        H(j+1)=h;
-        t = t+h;
-        time(j+1)=t;
-        j=j+1;
-        h = delta*h;
-        
-    elseif R>eps*100
-        delta=0.95;
-        h = delta*h;      
-    else
-        delta=1;
+    % 1st solution: optimized timestep
+    delta = 0.84*(eps/R)^(1/4);
+    if R>=eps
+        h = delta*h;    
+    else        
         y(:,j+1) = sol4(:,j+1);
         H(j+1)=h;
         t = t+h;
@@ -71,29 +47,49 @@ while t<T
         h = delta*h;
     end
     
+% % 2nd solution:    
+%     eps=10e-4;
+%     if R<eps
+%         delta=1.05;
+%         y(:,j+1) = sol4(:,j+1);
+%         H(j+1)=h;
+%         t = t+h;
+%         time(j+1)=t;
+%         j=j+1;
+%         h = delta*h;
+%         
+%     elseif R>eps*100
+%         delta=0.95;
+%         h = delta*h;      
+%     else
+%         delta=1;
+%         y(:,j+1) = sol4(:,j+1);
+%         H(j+1)=h;
+%         t = t+h;
+%         time(j+1)=t;
+%         j=j+1;
+%         h = delta*h;
+%     end
+    
 
 end
 
-figure
+% figure
 subplot(1,2,1)
 plot(time([1:j]),y(1,[1:j]),'red')
-xlabel('Time')
-ylabel('x(t)')
-title('Motion')
+title('Motion function at the last omega value')
+xlabel('$t$','interpreter','latex')
+ylabel('$x[t]$','interpreter','latex')
 subplot(1,2,2)
 plot(time([1:j]),H([1:j]))
-xlabel('Time')
-ylabel('h[s]')
-title('Step size')
-%subplot(1,3,3)
-%plot(y(1,[1:5:j]),y(2,[1:5:j]))
-%title('Phase portrait')
-%xlabel('Time')
+title('Adaptive time step')
+xlabel('$t$','interpreter','latex')
+ylabel('$h[t]$','interpreter','latex')
 
-% Getting the amplitude of the vibration
-amp_data=y(1,2400:end);
+nonzero=find(y(1,:));
+index=size(nonzero,2);
+amp_data=y(1,(index-200):index);
 amp=max(amp_data);
-
 
 
 end
