@@ -1,5 +1,6 @@
 %% UNP-homework-I
 
+%%
 clear all;
 close all;
 clc;
@@ -17,6 +18,8 @@ f0=60;
 w=2;
 F0=f0/s;
 
+
+%%
 %initial conditions
 c1=2;
 c2=2;
