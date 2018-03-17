@@ -1,23 +1,23 @@
-function [U_next, F_next] = Lax_Wendroff_solver(U_ini, F_ini, Q_ini, x, A, c_v, R, dx, dt, p, T, v, rho)
+function [U_next, F_next, v_next, p_next] = Lax_Wendroff_solver(U_prev, F_prev, ~, x, A, c_v, gamma, R, dx, dt, sp_pts)
 
 % Interpolating the U & F values at half x points
 % The points we're intrested in:
-xq=1.5:10;
+xq=1.5:sp_pts;
 % transzponálni kell az U & F mátrixot, mert így tud csak interpolálni. utána meg visszatranszponálni
-U_prev_interp=(interp1(x,U_ini',xq))'; 
-% F_prev_interp=(interp1(x,F_ini',xq))';
+U_prev_interp=(interp1(x,U_prev',xq))'; 
+% F_prev_interp=(interp1(x,F_prev',xq))';
 
 % Moving a half time-step-->getting the U values there //delta(t)-t és
 % delta(x)-et majd deklarálni kell
-U_half=zeros(3,9);
-for ii=1:9
-    U_half(:,ii)=U_prev_interp(:,ii)+dt/(2*dx)*(F_ini(:,ii)-F_ini(:,ii+1));
+U_half=zeros(3,sp_pts-1);
+for ii=1:sp_pts-1
+    U_half(:,ii)=U_prev_interp(:,ii)+dt/(2*dx)*(F_prev(:,ii)-F_prev(:,ii+1));
 end
 
 % Calculating the F values at half time-step points:
 rho_half=U_half(1,:)/A;
-v_half=U_half(2,:)/U_half(1,:);
-e_half=U_half(3,:)/U_half(1,:);
+v_half=U_half(2,:)./U_half(1,:);
+e_half=U_half(3,:)./U_half(1,:);
 T_half=1/c_v*(e_half-(v_half.^2)/2);
 p_half=R*(rho_half.*T_half);
 F_half(1,:)=rho_half.*v_half*A;
@@ -25,9 +25,9 @@ F_half(2,:)=(rho_half.*(v_half).^2+p_half)*A;
 F_half(3,:)=(rho_half.*v_half.*e_half+p_half.*v_half)*A;
 
 % Moving a unit time-step:
-U_next=zeros(3,10);
-for jj=2:9      % indexet csiszolni, kimenet U hogy nézzen ki?
-    U_next(:,jj)=U_ini(:,jj)+dt/dx*(F_half(:,jj-1)-F_half(:,jj));
+U_next=zeros(3,sp_pts);
+for jj=2:sp_pts-1      % indexet csiszolni, kimenet U hogy nézzen ki?
+    U_next(:,jj)=U_prev(:,jj)+dt/dx*(F_half(:,jj-1)-F_half(:,jj));
 end
 
 % Calculating the F values at the unit time-step points:
@@ -40,15 +40,33 @@ F_next(1,:)=rho_next.*v_next*A;
 F_next(2,:)=(rho_next.*(v_next).^2+p_next)*A;
 F_next(3,:)=(rho_next.*v_next.*e_next+p_next.*v_next)*A;
 
-%%
-subplot(2,2,1)
-plot(x, p_next, x, p, 'r')
-subplot(2,2,2)
-plot(x, v_next, x, v, 'r')
-subplot(2,2,3)
-plot(x, rho_next, x, rho, 'r')
-subplot(2,2,4)
-plot(x, T_next, x, T, 'r')
+% Implementing the boundary contitions:
+v_prev=U_prev(2,:)./U_prev(1,:);
+T_prev=(U_prev(3,:)./U_prev(1,:))/c_v -(v_prev.^2)/(2*c_v);
+p_prev=R*((U_prev(1,:)/A).*T_prev);
+a_prev=sqrt(gamma*R*T_prev);             % a & v values at the previous time step, in each x pts
+% Compressible method of characteristics:
+x_R=x(1)+dt*(a_prev(1)-v_prev(1))/(1+(v_prev(2)-v_prev(1))/dx*dt-(a_prev(2)-a_prev(1))/dx*dt); 
+% Interpolating all important variables to x_R:
+v_R=v_prev(1)+(v_prev(2)-v_prev(1))/dx*x_R;
+a_R=a_prev(1)+(a_prev(2)-a_prev(1))/dx*x_R;
+p_R=p_prev(1)+(p_prev(2)-p_prev(1))/dx*x_R;
+T_R=T_prev(1)+(T_prev(2)-T_prev(1))/dx*x_R;
+% Calculating the LHS properties:
+a_next=a_R-(gamma-1)/2*v_R;      %  ?_R = a_r-(?-1)/2*v_R = a = ? 
+T_next(1)=a_next.^2/(gamma*R);
+v_next(1)=0;                        % wall boundary condition
+e_next(1)=c_v*T_next(1)+0.5*(v_next(1)).^2;
+p_next(1)=p_R*(T_next(1)/T_R)^((gamma)/gamma-1);      % isentropic process along ?=const line
+rho_next(1)=p_next(1)/(R*T_next(1));
+v_next(1)=0;                        % wall boundary condition
 
+%Updating the U_next & F_next matrices on the boundaries:
+U_next(1,:)=A*rho_next;
+U_next(2,:)=A*rho_next.*v_next;     
+U_next(3,:)=A*rho_next.*e_next;
+F_next(1,:)=rho_next.*v_next*A;
+F_next(2,:)=(rho_next.*(v_next).^2+p_next)*A;
+F_next(3,:)=(rho_next.*v_next.*e_next+p_next.*v_next)*A;
 
 end
