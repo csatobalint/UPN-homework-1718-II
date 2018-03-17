@@ -1,11 +1,13 @@
-%% Unsteady flows in pipe networks homework. Applying Lax-Wendroff scheme (and other methods) for gas outflow from a tank.
-clear all
-close all
-clc
-% format shortEng
-% format long
-format compact
-format short
+%% Applying Lax-Wendroff scheme (and other methods) for gas outflow from a tank.
+% Unsteady flows in pipe networks home assignment 
+% The script was made by Zsigmond Zalán and Csató Bálint.
+    clear all
+    close all
+    clc
+    % format shortEng
+    % format long
+    format compact
+    format short
 
 % Material, geometrical properties
     R=8314/29;                  % universal gas constant for dry air
@@ -22,10 +24,10 @@ format short
     
 % Spatial discretization settings 
     dx=1;                       % spatial step size
-    sp_pts=L/dx;                % spatial resolution
-    x=1:dx:sp_pts;              % spatial grid
+    sp_pts=(L+1)/dx;            % spatial resolution
+    x=xL:dx:xR;                 % spatial grid
     
-% Initialization    
+% Initialization of state variables   
     p=10^5*ones(1,sp_pts);      % [Pa]
     % p=10^5*[10:-0.5:5.5];
     % p(20)=2*p(20);
@@ -39,53 +41,122 @@ format short
 % Time discretization settings 
     a=sqrt(gamma*R*T(1,1));
     dt=dx/a;                    % dx/dt<=a --> dx/dt:=0.5*a --> dt~0.005
+    tsteps=10;
 
+    
+% Initialization of state vectors
+    % Creating empty arrays
     U_ini=zeros(3,sp_pts);
     F_ini=zeros(3,sp_pts);
     Q_ini=zeros(1,sp_pts);
-
+    
+    %Calculating starting values
     U_ini(1,:)=A*rho;
     U_ini(2,:)=A*rho.*v;
     U_ini(3,:)=A*rho.*e;
+    
     F_ini(1,:)=A*rho.*v;
     F_ini(2,:)=A*(rho.*v.^2+p);
     F_ini(3,:)=A*(rho.*e.*v+p.*v);
-
-U_prev=U_ini;
-F_prev=F_ini;
-Q_prev=Q_ini;
-tsteps=5;
-% storage of U & F matrices:
-U_write=zeros(3,sp_pts,tsteps);
-F_write=zeros(3,sp_pts,tsteps);
-v_write=zeros(tsteps,sp_pts);
-p_write=zeros(tsteps,sp_pts);
+    
+    U_prev=U_ini;
+    F_prev=F_ini;
+    Q_prev=Q_ini;
+    
+% Storage of U & F matrices:
+    U_write=zeros(3,sp_pts,tsteps);
+    F_write=zeros(3,sp_pts,tsteps);
+    v_write=zeros(tsteps,sp_pts);
+    p_write=zeros(tsteps,sp_pts);
+    rho_write=zeros(tsteps,sp_pts);
+    T_write=zeros(tsteps,sp_pts);
+       
 for i=1:tsteps  % moving in the time domain
-    [U_next, F_next,v_next, p_next] = Lax_Wendroff_solver(U_prev, F_prev, Q_prev, x, A, c_v, gamma, R, dx, dt, sp_pts);
-%     U_next(isnan(U_next))=0;
-%     F_next(isnan(F_next))=0;
-    U_write(:,:,i)=U_next;
-    F_write(:,:,i)=F_next;
-    v_write(i,:)=v_next;
-    p_write(i,:)=p_next;
-    U_prev=U_next; F_prev=F_next;
+    
+    [U_next, F_next, v_next, p_next, rho_next, T_next] = Lax_Wendroff_solver(U_prev, F_prev, Q_prev, x, A, c_v, gamma, R, dx, dt, sp_pts);
+    
+    %     U_next(isnan(U_next))=0;
+    %     F_next(isnan(F_next))=0;
+    
+    % Write the results of the current time step
+        U_write(:,:,i)=U_next;
+        F_write(:,:,i)=F_next;
+        v_write(i,:)=v_next;
+        p_write(i,:)=p_next;
+        rho_write(i,:)=rho_next;
+        T_write(i,:)=T_next;
+    % Initialize the next time step
+        U_prev=U_next; 
+        F_prev=F_next;
 end
+
+% Plotting and saving results
+h = figure;
+x0=400;
+y0=200;
+width=550;
+height=400
+set(h,'units','points','position',[x0,y0,width,height])
+axis tight manual % this ensures that getframe() returns a consistent size
+filename = 'p-v-rho-T.gif';
+for n = 1:1:tsteps
+    suptitle('At time ' num2str(amp) ' units in amplitude.')
+    subplot(2,2,1)
+        plot(x, p_write(n,:))
+        %title('Pressure')
+        xlim([xL xR])
+        xlabel('$x~[m]$','interpreter','latex')
+        ylim([-10^6 10^6])
+        ylabel('$p~[Pa]$','interpreter','latex')
+    subplot(2,2,2)
+        plot(x, v_write(n,:))
+        %title('Velocity')
+        xlim([xL xR])
+        xlabel('$x~[m]$','interpreter','latex')
+        ylim([-2*a 2*a])
+        ylabel('$v~[\frac{m}{s}]$','interpreter','latex')
+    subplot(2,2,3)
+        plot(x, rho_write(n,:))
+        %title('Density')
+        xlim([xL xR])
+        xlabel('$x~[m]$','interpreter','latex')
+        ylim([0 2])
+        ylabel('$\rho~[\frac{kg}{m^3}]$','interpreter','latex')
+    subplot(2,2,4)
+        plot(x, T_write(n,:))
+        %title('Temperature')
+        xlim([xL xR])
+        xlabel('$x~[m]$','interpreter','latex')
+        ylim([T(1)-100 T(1)+100])
+        ylabel('$T~[K]$','interpreter','latex')
+    drawnow 
+      % Capture the plot as an image 
+      frame = getframe(h); 
+      im = frame2im(frame); 
+      [imind,cm] = rgb2ind(im,256); 
+      % Write to the GIF File 
+      if n == 1 
+          imwrite(imind,cm,filename,'gif', 'Loopcount',inf); 
+      else 
+          imwrite(imind,cm,filename,'gif','WriteMode','append'); 
+      end 
+  end
  
 % figure(3)
 % p_write(isnan(p_write))=0;
 % plot(x,p,'-*k', x,p_write(1,:),'-or')
 % legend('initial step','1st timestep','2nd timestep','Location','northeast')
 
-figure(1)
-v_write(isnan(v_write))=0;
-plot(x,v,'-*k', x,v_write(1,:),'-or',x, v_write(2,:),'-*g', x, v_write(3,:),'-db', x, v_write(4,:),'-+c', x, v_write(5,:),'-ok')
-legend('initial step','1st timestep','2nd timestep','3rd timestep','4th timestep','5th timestep','Location','northeast')
-title('Velocity')
-figure(2)
-p_write(isnan(p_write))=0;
-plot(x,p,'-*k', x,p_write(1,:),'-or',x, p_write(2,:),'-*g', x, p_write(3,:),'-db', x, p_write(4,:),'-+c', x, p_write(5,:),'-ok')
-legend('initial step','1st timestep','2nd timestep','3rd timestep','4th timestep','5th timestep','Location','northeast')
-title('Pressure')
+% figure(1)
+% v_write(isnan(v_write))=0;
+% plot(x,v,'-*k', x,v_write(1,:),'-or',x, v_write(2,:),'-*g', x, v_write(3,:),'-db', x, v_write(4,:),'-+c', x, v_write(5,:),'-ok')
+% legend('initial step','1st timestep','2nd timestep','3rd timestep','4th timestep','5th timestep','Location','northeast')
+% title('Velocity')
+% figure(2)
+% p_write(isnan(p_write))=0;
+% plot(x,p,'-*k', x,p_write(1,:),'-or',x, p_write(2,:),'-*g', x, p_write(3,:),'-db', x, p_write(4,:),'-+c', x, p_write(5,:),'-ok')
+% legend('initial step','1st timestep','2nd timestep','3rd timestep','4th timestep','5th timestep','Location','northeast')
+% title('Pressure')
 
 U_write
 F_write

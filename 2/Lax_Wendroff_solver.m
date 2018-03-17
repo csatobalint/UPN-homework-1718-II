@@ -1,10 +1,12 @@
-function [U_next, F_next, v_next, p_next] = Lax_Wendroff_solver(U_prev, F_prev, ~, x, A, c_v, gamma, R, dx, dt, sp_pts)
+function [U_next, F_next, v_next, p_next, rho_next, T_next] = Lax_Wendroff_solver(U_prev, F_prev, ~, x, A, c_v, gamma, R, dx, dt, sp_pts)
 
 % Interpolating the U & F values at half x points
 % The points we're intrested in:
-    xq=1.5:dx:sp_pts;
+    %xq=1.5:dx:sp_pts;
+    %xq=x(1)+0.5:dx:sp_pts;
+    xq=(x(1)+x(2))/2:dx:(x(end)+x(end-1))/2;
 % transzponálni kell az U & F mátrixot, mert így tud csak interpolálni. utána meg visszatranszponálni
-    U_prev_interp=(interp1(x,U_prev',xq))'; 
+    U_prev_interp=(interp1(x,U_prev',xq))';
     % F_prev_interp=(interp1(x,F_prev',xq))';
 
 % Moving a half time-step-->getting the U values there //delta(t)-t és
@@ -88,6 +90,7 @@ function [U_next, F_next, v_next, p_next] = Lax_Wendroff_solver(U_prev, F_prev, 
     e_next(end)=c_v*T_next(end)+0.5*(v_next(end)).^2;             % BIZTOS KELL A SEBESSÉGES TAG?
     p_next(end)=p_L*(T_next(end)/T_L)^((gamma)/gamma-1);        % isentropic process along ?=const line
     rho_next(end)=p_next(end)/(R*T_next(end));    
+    
 
 %Updating the U_next & F_next matrices on the boundaries:
     U_next(1,:)=A*rho_next;
