@@ -18,15 +18,15 @@
     gamma=c_p/c_v;
     
 % Pipe geometry settings    
-    xL=5                       % left side of the pipe
-    xR=15                      % right side of the pipe
-    L=xR-xL                    % length of the pipe
+    xL=5;                       % left side of the pipe
+    xR=15;                      % right side of the pipe
+    L=xR-xL;                    % length of the pipe
     
 % Spatial discretization settings 
-    dx=0.2                       % spatial step size
+    dx=0.2;                       % spatial step size
     %sp_pts=(L+1)/dx            % spatial resolution
-    x=xL:dx:xR                 % spatial grid
-    sp_pts=length(x)
+    x=xL:dx:xR;                 % spatial grid
+    sp_pts=length(x);
     xq=(x(1)+x(2))/2:dx:(x(end)+x(end-1))/2;
     
 % Initialization of state variables   
@@ -34,7 +34,7 @@
     % p=10^5*[10:-0.5:5.5];
     % p(20)=2*p(20);
     % p(21)=2*p(21);
-    p(floor(end/2))=1.5*10^5;   % pressure peek at the middle
+    p(floor(end/2))=1.2*10^5;   % pressure peek at the middle
     T=300*ones(1,sp_pts);       % [K]
     v=zeros(1,sp_pts);          % velocity field [m/s]
     rho=p./(R*T);               % density (ideal gas law) [kg/m3]
@@ -42,8 +42,8 @@
 
 % Time discretization settings 
     a=sqrt(gamma*R*T(1,1));
-    dt=dx/a;                    % dx/dt<=a --> dx/dt:=0.5*a --> dt~0.005
-    tsteps=20;
+    dt=0.5*dx/a;                    % dx/dt<=a --> dx/dt:=0.5*a --> dt~0.005
+    tsteps=2000;
     t0=0;
     Tend=dt*tsteps;
     t=t0:dt:Tend;
@@ -110,7 +110,7 @@ for n = 1:1:tsteps
         %title('Pressure')
         xlim([xL xR])
         xlabel('$x~[m]$','interpreter','latex')
-        ylim([-10^6 10^6])
+        ylim([0.75e5 1.25e5])
         ylabel('$p~[Pa]$','interpreter','latex')
     subplot(2,2,2)
         plot(x, v_write(n,:))
