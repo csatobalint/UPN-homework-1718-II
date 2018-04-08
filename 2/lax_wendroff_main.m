@@ -31,10 +31,7 @@
     
 % Initialization of state variables   
     p=10^5*ones(1,sp_pts);      % [Pa]
-    % p=10^5*[10:-0.5:5.5];
-    % p(20)=2*p(20);
-    % p(21)=2*p(21);
-    p(floor(end/2))=1.2*10^5;   % pressure peek at the middle
+    p(floor(end/2))=1.1*10^5;   % pressure peak at the middle
     T=300*ones(1,sp_pts);       % [K]
     v=zeros(1,sp_pts);          % velocity field [m/s]
     rho=p./(R*T);               % density (ideal gas law) [kg/m3]
@@ -43,7 +40,7 @@
 % Time discretization settings 
     a=sqrt(gamma*R*T(1,1));
     dt=0.5*dx/a;                    % dx/dt<=a --> dx/dt:=0.5*a --> dt~0.005
-    tsteps=2000;
+    tsteps=100;
     t0=0;
     Tend=dt*tsteps;
     t=t0:dt:Tend;
@@ -77,8 +74,16 @@
        
 for i=1:tsteps  % moving in the time domain
     
-    [U_next, F_next, v_next, p_next, rho_next, T_next] = Lax_Wendroff_solver(U_prev, F_prev, Q_prev, x, A, c_v, gamma, R, dx, dt, sp_pts);
+    [U_next_LW, F_next_LW, v_next_LW, p_next_LW,rho_next_LW, T_next_LW] = Lax_Wendroff_solver(U_prev, F_prev, Q_prev, x, A, c_v, gamma, R, dx, dt, sp_pts);
+    [U_next_L, F_next_L, v_next_L, p_next_L, rho_next_L, T_next_L] = Infl_res_LHS(U_prev, A, c_v, gamma, R, dx, dt);
+    [U_next_R, F_next_R, v_next_R, p_next_R, rho_next_R, T_next_R] = ClosedPipe_RHS(U_prev, A, c_v, gamma, R, dx, dt);
     
+    U_next=[U_next_L U_next_LW U_next_R];
+    F_next=[F_next_L F_next_LW F_next_R];
+    v_next=[v_next_L v_next_LW v_next_R];
+    p_next=[p_next_L p_next_LW p_next_R];
+    rho_next=[rho_next_L rho_next_LW rho_next_R];
+    T_next=[T_next_L T_next_LW T_next_R];
     %     U_next(isnan(U_next))=0;
     %     F_next(isnan(F_next))=0;
     
@@ -103,6 +108,11 @@ height=400;
 set(h,'units','points','position',[x0,y0,width,height])
 axis tight manual % this ensures that getframe() returns a consistent size
 filename = 'p-v-rho-T.gif';
+filename2 = 'p-v-rho-T';
+vobj=VideoWriter(filename2, 'Motion JPEG AVI');
+vobj.FrameRate=30;
+vobj.Quality=75;
+open(vobj);
 for n = 1:1:tsteps
     suptitle(['Time: ' num2str(t(n)) ' [s]'])
     subplot(2,2,1)
@@ -117,7 +127,7 @@ for n = 1:1:tsteps
         %title('Velocity')
         xlim([xL xR])
         xlabel('$x~[m]$','interpreter','latex')
-        ylim([-2*a 2*a])
+        ylim([-2*a/10 2*a/10])
         ylabel('$v~[\frac{m}{s}]$','interpreter','latex')
     subplot(2,2,3)
         plot(x, rho_write(n,:))
@@ -133,6 +143,7 @@ for n = 1:1:tsteps
         xlabel('$x~[m]$','interpreter','latex')
         ylim([T(1)-100 T(1)+100])
         ylabel('$T~[K]$','interpreter','latex')
+   
     drawnow 
       % Capture the plot as an image 
       frame = getframe(h); 
@@ -140,12 +151,16 @@ for n = 1:1:tsteps
       [imind,cm] = rgb2ind(im,256); 
       % Write to the GIF File 
       if n == 1 
-          imwrite(imind,cm,filename,'gif', 'Loopcount',inf); 
+          imwrite(imind,cm,filename,'gif','Loopcount',inf); 
       else 
           imwrite(imind,cm,filename,'gif','WriteMode','append'); 
       end 
+      
+     writeVideo(vobj, frame);
+     cla(gca)
   end
- 
+ close(vobj)
+
 % figure(3)
 % p_write(isnan(p_write))=0;
 % plot(x,p,'-*k', x,p_write(1,:),'-or')
@@ -162,5 +177,5 @@ for n = 1:1:tsteps
 % legend('initial step','1st timestep','2nd timestep','3rd timestep','4th timestep','5th timestep','Location','northeast')
 % title('Pressure')
 
-U_write;
-F_write;
+% U_write;
+% F_write;
