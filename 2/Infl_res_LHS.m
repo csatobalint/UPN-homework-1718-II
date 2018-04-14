@@ -1,4 +1,4 @@
-function [U_next_L, F_next_L, v_next_L, p_next_L, rho_next_L, T_next_L] = Infl_res_LHS (U_prev, A, c_v, gamma, R, dx, dt)
+function [U_next_L, F_next_L, v_next_L, p_next_L, rho_next_L, T_next_L] = Infl_res_LHS (U_prev, A, c_v, gamma, R, dx, dt, p_res)
 
 % Unpacking the primitive variables at the previous unit time-step points:
     v_prev=U_prev(2,:)./U_prev(1,:);
@@ -19,7 +19,7 @@ function [U_next_L, F_next_L, v_next_L, p_next_L, rho_next_L, T_next_L] = Infl_r
     theta=1;
     p_ref=10^5;
     T_ref=293;
-    p_res=1.1*10^5;                 % res : reservoir
+    %p_res=1.1*10^5;                 % res : reservoir
     T_res=T_ref*(p_res/p_ref)^((gamma-1)/gamma);
     a_t_res=sqrt(gamma*R*T_res);    
     % rho_res=p_res/(R*T_res);
