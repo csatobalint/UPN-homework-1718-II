@@ -11,8 +11,8 @@
 
 % Material, geometrical properties
     R=8314/29;                  % universal gas constant for dry air
-    d=0.05;
-    A=d^2*pi/4;                        % [m^2]
+    d=0.05;                     % pipe diameter, [m]
+    A=d^2*pi/4;                 % [m^2]
     c_v=710;                    % [J/(kg*K)] %[kJ/kg/K] ftp://ftp.energia.bme.hu/pub/Tuzelestechnika/MSc/fajho.pdf  
     c_p=1007;                   % [J/(kg*K)]
     gamma=c_p/c_v;
@@ -31,7 +31,7 @@
     
 % Initialization of state variables  
     p_ref=10^5;
-    p_res=1.05*10^5;
+    p_res=1.1*10^5;
     p=p_ref*ones(1,sp_pts);      % [Pa]
     %p(floor(end/2))=1.1*10^5;   % pressure peak at the middle
     T=300*ones(1,sp_pts);       % [K]
@@ -45,7 +45,7 @@
     a=sqrt(gamma*R*T(1,1));
     CFL=0.6;
     dt=CFL*dx/(a+v(1));                    % dx/dt<=a --> dx/dt:=0.5*a --> dt~0.005
-    tsteps=10000;
+    tsteps=1000;
     t=zeros(1,tsteps);
     
 % Initialization of state vectors
@@ -123,6 +123,8 @@ for i=1:tsteps  % moving in the time domain
     
     fprintf('Step %d: t = %6.4f, dt = %10.7f\n',i, t(i),dt);
     
+    p_final=U_write(2,:,tsteps)./U_write(1,:,tsteps);
+    
 end
 toc
 
@@ -143,7 +145,7 @@ vobj.FrameRate=30;
 vobj.Quality=75;
 open(vobj);
 for n = 1:1:last_timestep
-    suptitle(['Time: ' num2str(t(n)) ' [s]'])
+%     suptitle(['Time: ' num2str(t(n)) ' [s]'])
     t(n);
     subplot(2,2,1)
         plot(x, p_write(n,:))
@@ -192,5 +194,6 @@ for n = 1:1:last_timestep
  close(vobj)
 toc
 
-% U_write;
-% F_write;
+%% Determining the final (stationary) Mach number:
+t_quasistat=floor(0.3*size(find(t),2));
+M_st=v_write(t_quasistat,:)./sqrt(gamma*R*T_write(t_quasistat,:));
