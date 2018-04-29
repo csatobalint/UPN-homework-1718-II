@@ -34,7 +34,7 @@
     p_ref=10^5;
     p_res=1.1*10^5;
     p=p_ref*ones(1,sp_pts);      % [Pa]
-    p(floor(end/2))=1.1*10^5;   % pressure peak at the middle
+    %p(floor(end/2))=1.1*10^5;   % pressure peak at the middle
     T=300*ones(1,sp_pts);       % [K]
     v=zeros(1,sp_pts);          % velocity field [m/s]
     rho=p./(R*T);               % density (ideal gas law) [kg/m3]
@@ -53,7 +53,7 @@
     % Creating empty arrays
     U_ini=zeros(3,sp_pts);
     F_ini=zeros(3,sp_pts);
-    Q_ini=zeros(3,sp_pts);
+    Q_ini=zeros(1,sp_pts);
     
     %Calculating starting values
     U_ini(1,:)=A*rho;
@@ -83,7 +83,7 @@
 tic       
 for i=1:tsteps  % moving in the time domain
     
-    [U_next_LW, F_next_LW, Q_next_LW, v_next_LW, p_next_LW,rho_next_LW, T_next_LW, e_next_LW] = Lax_Wendroff_solver(U_prev, F_prev, Q_prev, x, A, c_v, gamma, R, dx, dt, sp_pts, lambda, d);
+    [U_next_LW, F_next_LW, Q_next_LW, v_next_LW, p_next_LW,rho_next_LW, T_next_LW] = Lax_Wendroff_solver(U_prev, F_prev, Q_prev, x, A, c_v, gamma, R, dx, dt, sp_pts, lambda, d);
     [U_next_L, F_next_L, v_next_L, p_next_L, rho_next_L, T_next_L] = Infl_res_LHS(U_prev, A, c_v, gamma, R, dx, dt, p_res);
     [U_next_R, F_next_R, v_next_R, p_next_R, rho_next_R, T_next_R] = Outfl_RHS(U_prev, A, c_v, gamma, R, dx, dt, p_ref);
     
@@ -150,7 +150,7 @@ vobj.Quality=75;
 open(vobj);
 for n = 1:1:last_timestep
 %     suptitle(['Time: ' num2str(t(n)) ' [s]'])
-%     t(n);
+    t(n);
     subplot(2,2,1)
         plot(x, p_write(n,:))
         %title('Pressure')
@@ -194,7 +194,7 @@ for n = 1:1:last_timestep
       
      writeVideo(vobj, frame);
      cla(gca)
-end
+  end
  close(vobj)
 toc
 

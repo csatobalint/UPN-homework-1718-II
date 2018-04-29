@@ -1,6 +1,6 @@
 % function KiaramlasFanno
-close all
-clc
+% close all
+% clc
 
 %% FELADAT
 % Egy tartályban szén-doxidot (kappa = 1.3) tárolunk Tt = 20 °C-os hõmérsékleten, pt = 1.7
