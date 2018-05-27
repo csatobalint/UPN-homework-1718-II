@@ -1,9 +1,9 @@
 %% Applying Lax-Wendroff scheme (and other methods) for gas outflow from a tank.
 % Unsteady flows in pipe networks home assignment 
 % The script was made by Zsigmond Zalán and Csató Bálint.
-%     clear all
-%     close all
-%     clc
+    clear all
+    close all
+    clc
     % format shortEng
     % format long
     format compact
@@ -32,9 +32,9 @@
     
 % Initialization of state variables  
     p_ref=10^5;
-    p_res=1.1*10^5;
+    p_res=1.3*10^5;
     p=p_ref*ones(1,sp_pts);      % [Pa]
-    p(floor(end/2))=1.1*10^5;   % pressure peak at the middle
+    %p(floor(end/2))=1.1*10^5;   % pressure peak at the middle
     T=300*ones(1,sp_pts);       % [K]
     v=zeros(1,sp_pts);          % velocity field [m/s]
     rho=p./(R*T);               % density (ideal gas law) [kg/m3]
@@ -64,9 +64,6 @@
     F_ini(2,:)=A*(rho.*v.^2+p);
     F_ini(3,:)=A*(rho.*e.*v+p.*v);
     
-%   F_s=A*rho/2*lambda/D.*v.*abs(v);
-%     F_s_ini=0;
-        
     U_prev=U_ini;
     F_prev=F_ini;
     Q_prev=Q_ini;
@@ -132,52 +129,56 @@ for i=1:tsteps  % moving in the time domain
 end
 toc
 
-semilogy(t,dv_write)
+semilogy(t,dv_write);
+xlabel('$t~[s]$','interpreter','latex');
+ylabel('$\delta v~[s]$','interpreter','latex');
+title('Absolute changes of velocity');
+grid on
 tic
-% Plotting and saving results
+
+%% Plotting and saving results
 h = figure('visible','off');
-x0=400;
-y0=200;
-width=550;
-height=400;
+x0=50;
+y0=50;
+width=800;
+height=720;
 set(h,'units','points','position',[x0,y0,width,height])
 axis tight manual % this ensures that getframe() returns a consistent size
 filename = 'p-v-rho-T.gif';
 filename2 = 'p-v-rho-T';
 vobj=VideoWriter(filename2, 'Motion JPEG AVI');
-vobj.FrameRate=30;
-vobj.Quality=75;
+vobj.FrameRate=60;
+vobj.Quality=70;
 open(vobj);
 for n = 1:1:last_timestep
-%     suptitle(['Time: ' num2str(t(n)) ' [s]'])
-%     t(n);
+     suptitle(['Time: ' num2str(t(n)) ' [s]'])
     subplot(2,2,1)
-        plot(x, p_write(n,:))
-        %title('Pressure')
+        area(x, p_write(n,:))
+        %title('asd ')
         xlim([xL xR])
         xlabel('$x~[m]$','interpreter','latex')
         ylim([p_ref*0.95 p_res*1.05])
         ylabel('$p~[Pa]$','interpreter','latex')
     subplot(2,2,2)
-        plot(x, v_write(n,:))
-        %title('Velocity')
+        area(x, v_write(n,:))
+        %title(' ')
         xlim([xL xR])
         xlabel('$x~[m]$','interpreter','latex')
-        ylim([-v_est/10 1.2*v_est])
+        ylim([0 1.5*v_write(last_timestep,end)])
         ylabel('$v~[\frac{m}{s}]$','interpreter','latex')
     subplot(2,2,3)
-        plot(x, rho_write(n,:))
+        area(x, rho_write(n,:))
         %title('Density')
         xlim([xL xR])
         xlabel('$x~[m]$','interpreter','latex')
-        ylim([1.1 1.3])
+        ylim([1 1.5*rho_write(last_timestep,end)])
         ylabel('$\rho~[\frac{kg}{m^3}]$','interpreter','latex')
     subplot(2,2,4)
-        plot(x, T_write(n,:))
+        area(x, T_write(n,:))
         %title('Temperature')
         xlim([xL xR])
         xlabel('$x~[m]$','interpreter','latex')
-        ylim([T(1)-20 T(1)+10])
+        ylim([250 350])
         ylabel('$T~[K]$','interpreter','latex')
    
 %     drawnow 
@@ -203,4 +204,26 @@ toc
 % M_st=v_write(t_quasistat,:)./sqrt(gamma*R*T_write(t_quasistat,:));
 M_st=v_write(size(find(t),2),:)./sqrt(gamma*R*T_write(size(find(t),2),:));
 M_st_av=mean(M_st);
-plot(x,M_st);
+close all
+M_cso=KiaramlasFanno(gamma, T(1)-273, p_res/10^5, p_ref/10^5, L, d*1000, lambda, R)
+figure1 = figure;
+axes1 = axes('Parent',figure1);
+hold(axes1,'on');
+plot(x,M_cso,'DisplayName','Numerical solution','MarkerFaceColor',[1 0 0],...
+    'MarkerSize',6,...
+    'Marker','o',...
+    'LineStyle','-',...
+    'LineWidth',1,...
+    'Color',[1 0 0]);
+plot(x,M_st,'DisplayName','Fanno Flow','MarkerSize',8,'Marker','x',...
+    'LineWidth',1,...
+    'Color',[0 0 1]);
+
+xlabel('$x~[m]$','Interpreter','latex');
+ylabel('$Ma~[-]$','Interpreter','latex');
+xlim([xL xR]);
+ylim([M_st(1)*0.9 M_st(end)*1.1]);
+box(axes1,'on');
+grid(axes1,'on');
+set(axes1,'FontSize',14);
+legend1 = legend(axes1,'show');

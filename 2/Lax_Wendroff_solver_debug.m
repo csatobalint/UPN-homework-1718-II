@@ -1,9 +1,9 @@
 %% Applying Lax-Wendroff scheme (and other methods) for gas outflow from a tank.
 % Unsteady flows in pipe networks home assignment 
 % The script was made by Zsigmond Zalán and Csató Bálint.
-%     clear all
-%     close all
-%     clc
+    clear all
+    close all
+    clc
     % format shortEng
     % format long
     format compact
@@ -32,9 +32,9 @@
     
 % Initialization of state variables  
     p_ref=10^5;
-    p_res=1.1*10^5;
+    p_res=1.3*10^5;
     p=p_ref*ones(1,sp_pts);      % [Pa]
-    p(floor(end/2))=1.1*10^5;   % pressure peak at the middle
+    %p(floor(end/2))=1.1*10^5;   % pressure peak at the middle
     T=300*ones(1,sp_pts);       % [K]
     v=zeros(1,sp_pts);          % velocity field [m/s]
     rho=p./(R*T);               % density (ideal gas law) [kg/m3]
@@ -80,53 +80,136 @@
     T_write=zeros(tsteps,sp_pts);
     t_write=zeros(tsteps,sp_pts);
     dv_write=zeros(1,tsteps);
-
-% Interpolating the U & F values at half x points
-% The points we're intrested in:
-    %xq=1.5:dx:sp_pts;
-    %xq=x(1)+0.5:dx:sp_pts;
-    xq=(x(1)+x(2))/2:dx:(x(end)+x(end-1))/2;
-% transzponálni kell az U & Q mátrixot, mert így tud csak interpolálni. utána meg visszatranszponálni
-    U_prev_interp=(interp1(x,U_prev',xq))';
-    Q_prev_interp=(interp1(x,Q_prev',xq))';
-
-% Moving a half time-step-->getting the U values there 
-    U_half=zeros(3,sp_pts-1);
-    for ii=1:sp_pts-1
-        U_half(:,ii)=U_prev_interp(:,ii)+dt/(2*dx)*(F_prev(:,ii)-F_prev(:,ii+1))+dt/2*Q_prev_interp(:,ii);
-    end
-
-% Unpacking the primitive variables at half time-step points:
-    rho_half=U_half(1,:)/A;
-    v_half=U_half(2,:)./U_half(1,:);
-    e_half=U_half(3,:)./U_half(1,:);
-    T_half=1/c_v*(e_half-(v_half.^2)/2);
-    p_half=R*(rho_half.*T_half);
+tic       
+for i=1:tsteps  % moving in the time domain
     
-% Calculating the F values at half time-step points:
-    F_half(1,:)= rho_half.*v_half*A;
-    F_half(2,:)=(rho_half.*(v_half).^2+p_half)*A;
-    F_half(3,:)=(rho_half.*v_half.*e_half+p_half.*v_half)*A;
-    Q_half=zeros(3,sp_pts-1);
-    Q_half(2,:)=-A*rho_half./2*lambda/d.*v_half.*abs(v_half);
-
-% Moving a unit time-step and calculating U values over there:
-    U_next=zeros(3,sp_pts);
-    for ii=2:sp_pts-1      % indexet csiszolni, kimenet U hogy nézzen ki?
-        U_next(:,ii)=U_prev(:,ii)+dt/dx*(F_half(:,ii-1)-F_half(:,ii))+Q_half(:,ii);
-    end
-% The solver doesn't work at the boundaries so we can cut out the bou. pts:
-    U_next_LW=U_next(:,2:end-1);
-% Unpacking the primitive variables at the next unit time-step points:
-    rho_next_LW=U_next_LW(1,:)/A;
-    v_next_LW=U_next_LW(2,:)./U_next_LW(1,:);
-    e_next_LW=U_next_LW(3,:)./U_next_LW(1,:);
-    T_next_LW=1/c_v*(e_next_LW-(v_next_LW.^2)./2);
-    p_next_LW=R*(rho_next_LW.*T_next_LW);
+    [U_next_LW, F_next_LW, Q_next_LW, v_next_LW, p_next_LW,rho_next_LW, T_next_LW, e_next_LW] = Lax_Wendroff_solver(U_prev, F_prev, Q_prev, x, A, c_v, gamma, R, dx, dt, sp_pts, lambda, d);
+    %[U_next_LW, F_next_LW, v_next_LW, p_next_LW,rho_next_LW, T_next_LW] = Lax_Wendroff_solver(U_prev, F_prev, Q_prev, x, A, c_v, gamma, R, dx, dt, sp_pts);
+    [U_next_L, F_next_L, v_next_L, p_next_L, rho_next_L, T_next_L] = Infl_res_LHS(U_prev, A, c_v, gamma, R, dx, dt, p_res);
+    [U_next_R, F_next_R, v_next_R, p_next_R, rho_next_R, T_next_R] = Outfl_RHS(U_prev, A, c_v, gamma, R, dx, dt, p_ref);
     
-% Calculating the F values at the next unit time-step points:
-    F_next_LW(1,:)=rho_next_LW.*v_next_LW*A;
-    F_next_LW(2,:)=(rho_next_LW.*(v_next_LW).^2+p_next_LW)*A;
-    F_next_LW(3,:)=(rho_next_LW.*v_next_LW.*e_next_LW+p_next_LW.*v_next_LW)*A;
-    Q_next_LW=zeros(3,sp_pts-2);
-    Q_next_LW(2,:)=-A/2*lambda/d*rho_next_LW.*v_next_LW.*abs(v_next_LW);
+    U_next=[U_next_L U_next_LW U_next_R];
+    F_next=[F_next_L F_next_LW F_next_R];
+    v_next=[v_next_L v_next_LW v_next_R];
+    p_next=[p_next_L p_next_LW p_next_R];
+    rho_next=[rho_next_L rho_next_LW rho_next_R];
+    T_next=[T_next_L T_next_LW T_next_R];
+    %     U_next(isnan(U_next))=0;
+    %     F_next(isnan(F_next))=0;
+    
+    % Write the results of the current time step
+        U_write(:,:,i)=U_next;
+        F_write(:,:,i)=F_next;
+        v_write(i,:)=v_next;
+        p_write(i,:)=p_next;
+        rho_write(i,:)=rho_next;
+        T_write(i,:)=T_next;
+        if i>1
+        t(i)=t(i-1)+dt;
+        else
+        t(i)=dt;
+        end
+        
+     % Calculate residuals
+        v_prev=U_prev(2,:)./U_prev(1,:);
+        dv_next=max(   abs(   (v_next-v_prev)/1     )    );
+        if dv_next<10^-2
+            last_timestep=i;
+            break 
+        end
+        dv_write(i)=dv_next;
+        
+    % Initialize the next time step
+        U_prev=U_next; 
+        F_prev=F_next;
+        
+        t_write=CFL*dx./(v_next+sqrt(gamma*R*T_next));
+        dt=min(CFL*dx./(v_next+sqrt(gamma*R*T_next)));
+    
+    fprintf('Step %d: t = %6.4f, dt = %10.7f\n',i, t(i),dt);
+    
+    p_final=U_write(2,:,tsteps)./U_write(1,:,tsteps);
+    
+end
+toc
+
+semilogy(t,dv_write)
+tic
+% Plotting and saving results
+h = figure('visible','off');
+x0=400;
+y0=200;
+width=550;
+height=400;
+set(h,'units','points','position',[x0,y0,width,height])
+axis tight manual % this ensures that getframe() returns a consistent size
+filename = 'p-v-rho-T.gif';
+filename2 = 'p-v-rho-T';
+vobj=VideoWriter(filename2, 'Motion JPEG AVI');
+vobj.FrameRate=30;
+vobj.Quality=75;
+open(vobj);
+for n = 1:125:last_timestep
+%     suptitle(['Time: ' num2str(t(n)) ' [s]'])
+%     t(n);
+    subplot(2,2,1)
+        plot(x, p_write(n,:))
+        %title('Pressure')
+        xlim([xL xR])
+        xlabel('$x~[m]$','interpreter','latex')
+        ylim([p_ref*0.95 p_res*1.05])
+        ylabel('$p~[Pa]$','interpreter','latex')
+    subplot(2,2,2)
+        plot(x, v_write(n,:))
+        %title('Velocity')
+        xlim([xL xR])
+        xlabel('$x~[m]$','interpreter','latex')
+        ylim([-v_est/10 1.2*v_est])
+        ylabel('$v~[\frac{m}{s}]$','interpreter','latex')
+    subplot(2,2,3)
+        plot(x, rho_write(n,:))
+        %title('Density')
+        xlim([xL xR])
+        xlabel('$x~[m]$','interpreter','latex')
+        ylim([1.1 1.3])
+        ylabel('$\rho~[\frac{kg}{m^3}]$','interpreter','latex')
+    subplot(2,2,4)
+        plot(x, T_write(n,:))
+        %title('Temperature')
+        xlim([xL xR])
+        xlabel('$x~[m]$','interpreter','latex')
+        ylim([T(1)-20 T(1)+10])
+        ylabel('$T~[K]$','interpreter','latex')
+   
+%     drawnow 
+      % Capture the plot as an image 
+      frame = getframe(h); 
+%       im = frame2im(frame); 
+%       [imind,cm] = rgb2ind(im,256); 
+%       % Write to the GIF File 
+%       if n == 1 
+%           imwrite(imind,cm,filename,'gif','Loopcount',inf); 
+%       else 
+%           imwrite(imind,cm,filename,'gif','WriteMode','append'); 
+%       end 
+      
+     writeVideo(vobj, frame);
+     cla(gca)
+end
+ close(vobj)
+toc
+
+%% Determining the final (stationary) Mach number:
+% t_quasistat=floor(0.3*size(find(t),2));
+% M_st=v_write(t_quasistat,:)./sqrt(gamma*R*T_write(t_quasistat,:));
+M_st=v_write(size(find(t),2),:)./sqrt(gamma*R*T_write(size(find(t),2),:));
+M_st_av=mean(M_st);
+figure
+KiaramlasFanno(gamma, T(1)-273, p_res/10^5, p_ref/10^5, L, d*1000, lambda, R)
+hold on 
+plot(x,M_st,'x')
+    xlim([xL xR])
+    xlabel('$x~[m]$','interpreter','latex')
+    ylim([0 M_st(end)*2])
+    ylabel('$Ma~[-]$','interpreter','latex')
+hold off

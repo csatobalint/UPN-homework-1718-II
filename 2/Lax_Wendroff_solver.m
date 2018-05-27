@@ -2,8 +2,6 @@ function [U_next_LW, F_next_LW, Q_next_LW, v_next_LW, p_next_LW, rho_next_LW, T_
 
 % Interpolating the U & F values at half x points
 % The points we're intrested in:
-    %xq=1.5:dx:sp_pts;
-    %xq=x(1)+0.5:dx:sp_pts;
     xq=(x(1)+x(2))/2:dx:(x(end)+x(end-1))/2;
 % transzponálni kell az U & Q mátrixot, mert így tud csak interpolálni. utána meg visszatranszponálni
     U_prev_interp=(interp1(x,U_prev',xq))';
@@ -31,8 +29,8 @@ function [U_next_LW, F_next_LW, Q_next_LW, v_next_LW, p_next_LW, rho_next_LW, T_
 
 % Moving a unit time-step and calculating U values over there:
     U_next=zeros(3,sp_pts);
-    for jj=2:sp_pts-1      % indexet csiszolni, kimenet U hogy nézzen ki?
-        U_next(:,jj)=U_prev(:,jj)+dt/dx*(F_half(:,jj-1)-F_half(:,jj))+Q_half(:,jj);
+    for jj=2:sp_pts-1
+        U_next(:,jj)=U_prev(:,jj)-dt/dx*(F_half(:,jj)-F_half(:,jj-1))+dt/2*(Q_half(:,jj)+Q_half(:,jj-1));
     end
 % The solver doesn't work at the boundaries so we can cut out the bou. pts:
     U_next_LW=U_next(:,2:end-1);

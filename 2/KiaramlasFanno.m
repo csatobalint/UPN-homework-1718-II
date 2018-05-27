@@ -1,4 +1,4 @@
-% function KiaramlasFanno
+function M_cso=KiaramlasFanno(kappa, Tt, pt, p0, L, D, lambda, R)
 % close all
 % clc
 
@@ -14,15 +14,15 @@
 
 %% ADATOK
 tic
-kappa = 1.4183;
-Tt = 20;   % °C
-pt = 1.3;  % bar
-p0 = 1;    % bar
-L = 4;     % m
-D = 50;    % mm
-
-lambda = 0.02;
-R = 8314/29;                  % universal gas constant for dry air; % J/kg/K
+%kappa = 1.4183;
+% Tt = 20;   % °C
+% pt = 1.3;  % bar
+% p0 = 1;    % bar
+% L = 4;     % m
+% D = 50;    % mm
+% 
+% lambda = 0.02;
+% R = 8314/29;                  % universal gas constant for dry air; % J/kg/K
 
 M10 = 0.1; % kezdeti érték a Mach-számhoz
 
@@ -56,9 +56,9 @@ end
 
 %Csõbéli Mach-szám alakulása
 csobeosztas=linspace(0,4,21);
-figure(1)
-plot(csobeosztas,M_cso)
-grid on
+%figure(1)
+%plot(csobeosztas,M_cso)
+%grid on
 % Állapotjelzõk a csõ elején
 T1 = Tt/(1 + (kappa-1)/2*M1^2);
 p1 = (1 + (kappa-1)/2*M1^2)^(kappa/(1-kappa))*pt;
@@ -93,5 +93,5 @@ fprintf('Sûrûség:      %.4f kg/m^3\n',rho2)
 fprintf('Sebesség:     %.4f m/s\n',v2)
 fprintf('Hangsebesség: %.4f m/s\n',a2)
 fprintf('Tömegáram:    %.5f kg/s\n',mPont2)
-% end
 toc
+end
