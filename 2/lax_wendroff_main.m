@@ -11,11 +11,12 @@
 
 % Material, geometrical properties
     R=8314/29;                  % universal gas constant for dry air
-    d=0.05;
-    A=d^2*pi/4;                        % [m^2]
+    d=0.05;                     % pipe diameter, [m]
+    A=d^2*pi/4;                 % [m^2]
     c_v=710;                    % [J/(kg*K)] %[kJ/kg/K] ftp://ftp.energia.bme.hu/pub/Tuzelestechnika/MSc/fajho.pdf  
     c_p=1007;                   % [J/(kg*K)]
     gamma=c_p/c_v;
+    lambda=0.02;
     
 % Pipe geometry settings    
     xL=0;                       % left side of the pipe
@@ -31,7 +32,7 @@
     
 % Initialization of state variables  
     p_ref=10^5;
-    p_res=1.05*10^5;
+    p_res=1.3*10^5;
     p=p_ref*ones(1,sp_pts);      % [Pa]
     %p(floor(end/2))=1.1*10^5;   % pressure peak at the middle
     T=300*ones(1,sp_pts);       % [K]
@@ -45,14 +46,14 @@
     a=sqrt(gamma*R*T(1,1));
     CFL=0.6;
     dt=CFL*dx/(a+v(1));                    % dx/dt<=a --> dx/dt:=0.5*a --> dt~0.005
-    tsteps=10000;
+    tsteps=1000;
     t=zeros(1,tsteps);
     
 % Initialization of state vectors
     % Creating empty arrays
     U_ini=zeros(3,sp_pts);
     F_ini=zeros(3,sp_pts);
-    Q_ini=zeros(1,sp_pts);
+    Q_ini=zeros(3,sp_pts);
     
     %Calculating starting values
     U_ini(1,:)=A*rho;
@@ -79,7 +80,7 @@
 tic       
 for i=1:tsteps  % moving in the time domain
     
-    [U_next_LW, F_next_LW, v_next_LW, p_next_LW,rho_next_LW, T_next_LW] = Lax_Wendroff_solver(U_prev, F_prev, Q_prev, x, A, c_v, gamma, R, dx, dt, sp_pts);
+    [U_next_LW, F_next_LW, Q_next_LW, v_next_LW, p_next_LW,rho_next_LW, T_next_LW, e_next_LW] = Lax_Wendroff_solver(U_prev, F_prev, Q_prev, x, A, c_v, gamma, R, dx, dt, sp_pts, lambda, d);
     [U_next_L, F_next_L, v_next_L, p_next_L, rho_next_L, T_next_L] = Infl_res_LHS(U_prev, A, c_v, gamma, R, dx, dt, p_res);
     [U_next_R, F_next_R, v_next_R, p_next_R, rho_next_R, T_next_R] = Outfl_RHS(U_prev, A, c_v, gamma, R, dx, dt, p_ref);
     
@@ -123,55 +124,61 @@ for i=1:tsteps  % moving in the time domain
     
     fprintf('Step %d: t = %6.4f, dt = %10.7f\n',i, t(i),dt);
     
+    p_final=U_write(2,:,tsteps)./U_write(1,:,tsteps);
+    
 end
 toc
 
-semilogy(t,dv_write)
+semilogy(t,dv_write);
+xlabel('$t~[s]$','interpreter','latex');
+ylabel('$\delta v~[s]$','interpreter','latex');
+title('Absolute changes of velocity');
+grid on
 tic
-% Plotting and saving results
+
+%% Plotting and saving results
 h = figure('visible','off');
-x0=400;
-y0=200;
-width=550;
-height=400;
+x0=50;
+y0=50;
+width=800;
+height=720;
 set(h,'units','points','position',[x0,y0,width,height])
 axis tight manual % this ensures that getframe() returns a consistent size
 filename = 'p-v-rho-T.gif';
 filename2 = 'p-v-rho-T';
 vobj=VideoWriter(filename2, 'Motion JPEG AVI');
-vobj.FrameRate=30;
-vobj.Quality=75;
+vobj.FrameRate=60;
+vobj.Quality=70;
 open(vobj);
 for n = 1:1:last_timestep
-    suptitle(['Time: ' num2str(t(n)) ' [s]'])
-    t(n);
+     suptitle(['Time: ' num2str(t(n)) ' [s]'])
     subplot(2,2,1)
-        plot(x, p_write(n,:))
-        %title('Pressure')
+        area(x, p_write(n,:))
+        %title('asd ')
         xlim([xL xR])
         xlabel('$x~[m]$','interpreter','latex')
         ylim([p_ref*0.95 p_res*1.05])
         ylabel('$p~[Pa]$','interpreter','latex')
     subplot(2,2,2)
-        plot(x, v_write(n,:))
-        %title('Velocity')
+        area(x, v_write(n,:))
+        %title(' ')
         xlim([xL xR])
         xlabel('$x~[m]$','interpreter','latex')
-        ylim([-v_est/10 1.2*v_est])
+        ylim([0 1.5*v_write(last_timestep,end)])
         ylabel('$v~[\frac{m}{s}]$','interpreter','latex')
     subplot(2,2,3)
-        plot(x, rho_write(n,:))
+        area(x, rho_write(n,:))
         %title('Density')
         xlim([xL xR])
         xlabel('$x~[m]$','interpreter','latex')
-        ylim([1.1 1.3])
+        ylim([1 1.5*rho_write(last_timestep,end)])
         ylabel('$\rho~[\frac{kg}{m^3}]$','interpreter','latex')
     subplot(2,2,4)
-        plot(x, T_write(n,:))
+        area(x, T_write(n,:))
         %title('Temperature')
         xlim([xL xR])
         xlabel('$x~[m]$','interpreter','latex')
-        ylim([T(1)-20 T(1)+5])
+        ylim([250 350])
         ylabel('$T~[K]$','interpreter','latex')
    
 %     drawnow 
@@ -188,9 +195,35 @@ for n = 1:1:last_timestep
       
      writeVideo(vobj, frame);
      cla(gca)
-  end
+end
  close(vobj)
 toc
 
-% U_write;
-% F_write;
+%% Determining the final (stationary) Mach number:
+% t_quasistat=floor(0.3*size(find(t),2));
+% M_st=v_write(t_quasistat,:)./sqrt(gamma*R*T_write(t_quasistat,:));
+M_st=v_write(size(find(t),2),:)./sqrt(gamma*R*T_write(size(find(t),2),:));
+M_st_av=mean(M_st);
+close all
+M_cso=KiaramlasFanno(gamma, T(1)-273, p_res/10^5, p_ref/10^5, L, d*1000, lambda, R)
+figure1 = figure;
+axes1 = axes('Parent',figure1);
+hold(axes1,'on');
+plot(x,M_cso,'DisplayName','Numerical solution','MarkerFaceColor',[1 0 0],...
+    'MarkerSize',6,...
+    'Marker','o',...
+    'LineStyle','-',...
+    'LineWidth',1,...
+    'Color',[1 0 0]);
+plot(x,M_st,'DisplayName','Fanno Flow','MarkerSize',8,'Marker','x',...
+    'LineWidth',1,...
+    'Color',[0 0 1]);
+
+xlabel('$x~[m]$','Interpreter','latex');
+ylabel('$Ma~[-]$','Interpreter','latex');
+xlim([xL xR]);
+ylim([M_st(1)*0.9 M_st(end)*1.1]);
+box(axes1,'on');
+grid(axes1,'on');
+set(axes1,'FontSize',14);
+legend1 = legend(axes1,'show');
