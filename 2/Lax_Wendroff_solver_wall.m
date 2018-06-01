@@ -1,0 +1,105 @@
+function [U_next, F_next, Q_next, v_next, p_next, rho_next, T_next, e_next] = Lax_Wendroff_solver_wall(U_prev, F_prev, Q_prev, x, A, c_v, gamma, R, dx, dt, sp_pts, lambda, d)
+
+% Interpolating the U & F values at half x points
+% The points we're intrested in:
+    xq=(x(1)+x(2))/2:dx:(x(end)+x(end-1))/2;
+% transzponálni kell az U & F mátrixot, mert így tud csak interpolálni. utána meg visszatranszponálni
+    U_prev_interp=(interp1(x,U_prev',xq))';
+    Q_prev_interp=(interp1(x,Q_prev',xq))';
+
+% Moving a half time-step-->getting the U values there //delta(t)-t és
+% delta(x)-et majd deklarálni kell
+    U_half=zeros(3,sp_pts-1);
+    for ii=1:sp_pts-1
+        U_half(:,ii)=U_prev_interp(:,ii)+dt/(2*dx)*(F_prev(:,ii)-F_prev(:,ii+1));
+    end
+
+% Unpacking the primitive variables at half time-step points:
+    rho_half=U_half(1,:)/A;
+    v_half=U_half(2,:)./U_half(1,:);
+    e_half=U_half(3,:)./U_half(1,:);
+    T_half=1/c_v*(e_half-(v_half.^2)/2);
+    p_half=R*(rho_half.*T_half);
+    
+% Calculating the F values at half time-step points:
+    F_half(1,:)= rho_half.*v_half*A;
+    F_half(2,:)=(rho_half.*(v_half).^2+p_half)*A;
+    F_half(3,:)=(rho_half.*v_half.*e_half+p_half.*v_half)*A;
+    Q_half=zeros(3,sp_pts-1);
+    Q_half(2,:)=-A/2*lambda/d*rho_half.*v_half.*abs(v_half);
+
+% Moving a unit time-step and calculating U values over there:
+    U_next=zeros(3,sp_pts);
+    for jj=2:sp_pts-1      % indexet csiszolni, kimenet U hogy nézzen ki?
+        U_next(:,jj)=U_prev(:,jj)+dt/dx*(F_half(:,jj-1)-F_half(:,jj));
+    end
+
+% Unpacking the primitive variables at the next unit time-step points:
+    rho_next=U_next(1,:)/A;
+    v_next=U_next(2,:)./U_next(1,:);
+    e_next=U_next(3,:)./U_next(1,:);
+    T_next=1/c_v*(e_next-(v_next.^2)./2);
+    p_next=R*(rho_next.*T_next);
+    
+% Calculating the F values at the next unit time-step points:
+    F_next(1,:)=rho_next.*v_next*A;
+    F_next(2,:)=(rho_next.*(v_next).^2+p_next)*A;
+    F_next(3,:)=(rho_next.*v_next.*e_next+p_next.*v_next)*A;
+    Q_next=zeros(3,sp_pts);
+    Q_next(2,:)=-A/2*lambda/d*rho_next.*v_next.*abs(v_next);
+    
+% Implementing the boundary contitions:
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% Unpacking the primitive variables at the previous unit time-step points:
+    v_prev=U_prev(2,:)./U_prev(1,:);
+    T_prev=(U_prev(3,:)./U_prev(1,:))/c_v -(v_prev.^2)/(2*c_v);
+    p_prev=R*((U_prev(1,:)/A).*T_prev);
+    a_prev=sqrt(gamma*R*T_prev);             % a & v values at the previous time step, in each x pts
+    
+% Compressible method of characteristics:
+
+% Origin of the characteristic line
+    x_R  = dt*(a_prev(1)-v_prev(1))   /   ...
+            (1 + (v_prev(2)-v_prev(1))/dx*dt - (a_prev(2)-a_prev(1))/dx*dt ); 
+    x_NL = dt*(a_prev(end)+v_prev(end))   /   ...
+            (1 - (v_prev(end-1)-v_prev(end))/dx*dt - (a_prev(end-1)-a_prev(end))/dx*dt ); 
+    
+% Interpolating all important variables to x_R and X_L:
+    v_R=v_prev(1)+(v_prev(2)-v_prev(1))/dx*x_R;
+    a_R=a_prev(1)+(a_prev(2)-a_prev(1))/dx*x_R;
+    p_R=p_prev(1)+(p_prev(2)-p_prev(1))/dx*x_R;
+    T_R=T_prev(1)+(T_prev(2)-T_prev(1))/dx*x_R;
+    v_L=v_prev(end)+(v_prev(end-1)-v_prev(end))/dx*x_NL;
+    a_L=a_prev(end)+(a_prev(end-1)-a_prev(end))/dx*x_NL;
+    p_L=p_prev(end)+(p_prev(end-1)-p_prev(end))/dx*x_NL;
+    T_L=T_prev(end)+(T_prev(end-1)-T_prev(end))/dx*x_NL;
+    
+% Calculating the LHS properties:
+    theta=1;
+    a_next =a_R-theta*(gamma-1)/2*v_R;                      %  ?_R = a_r-(?-1)/2*v_R = a = ? 
+    T_next(1)=a_next.^2/(gamma*R);
+    v_next(1)=0;                                            % wall boundary condition
+    e_next(1)=c_v*T_next(1)+0.5*(v_next(1)).^2;             % BIZTOS KELL A SEBESSÉGES TAG?
+    p_next(1)=p_R*(T_next(1)/T_R)^((gamma)/gamma-1);        % isentropic process along ?=const line
+    rho_next(1)=p_next(1)/(R*T_next(1));
+    
+% Calculating the RHS properties:
+    theta=-1;
+    a_next =a_L-theta*(gamma-1)/2*v_L;                      %  ?_R = a_r-(?-1)/2*v_R = a = ? 
+    T_next(end)=a_next.^2/(gamma*R);
+    v_next(end)=0;                                            % wall boundary condition
+    e_next(end)=c_v*T_next(end)+0.5*(v_next(end)).^2;             % BIZTOS KELL A SEBESSÉGES TAG?
+    p_next(end)=p_L*(T_next(end)/T_L)^((gamma)/gamma-1);        % isentropic process along ?=const line
+    rho_next(end)=p_next(end)/(R*T_next(end));    
+    
+
+%Updating the U_next & F_next matrices on the boundaries:
+    U_next(1,:)=A*rho_next;
+    U_next(2,:)=A*rho_next.*v_next;     
+    U_next(3,:)=A*rho_next.*e_next;
+    F_next(1,:)=rho_next.*v_next*A;
+    F_next(2,:)=(rho_next.*(v_next).^2+p_next)*A;
+    F_next(3,:)=(rho_next.*v_next.*e_next+p_next.*v_next)*A;
+
+end

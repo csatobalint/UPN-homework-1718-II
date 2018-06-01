@@ -24,7 +24,7 @@
     L=xR-xL;                    % length of the pipe
     
 % Spatial discretization settings 
-    dx=0.2;                       % spatial step size
+    dx=0.01;                       % spatial step size
     %sp_pts=(L+1)/dx            % spatial resolution
     x=xL:dx:xR;                 % spatial grid
     sp_pts=length(x);
@@ -35,6 +35,9 @@
     p_res=1.3*10^5;
     p=p_ref*ones(1,sp_pts);      % [Pa]
     %p(floor(end/2))=1.1*10^5;   % pressure peak at the middle
+%     p([1:floor(end/2)])=1.1*10^5;
+    period = 2*L;
+    %p=p+0.1*10^5*sin(2*3.14/period*x);
     T=300*ones(1,sp_pts);       % [K]
     v=zeros(1,sp_pts);          % velocity field [m/s]
     rho=p./(R*T);               % density (ideal gas law) [kg/m3]
@@ -44,9 +47,9 @@
 
 % Time discretization settings 
     a=sqrt(gamma*R*T(1,1));
-    CFL=0.6;
+    CFL=0.8;
     dt=CFL*dx/(a+v(1));                    % dx/dt<=a --> dx/dt:=0.5*a --> dt~0.005
-    tsteps=1000;
+    tsteps=10000;
     t=zeros(1,tsteps);
     
 % Initialization of state vectors
@@ -78,11 +81,15 @@
     t_write=zeros(tsteps,sp_pts);
     dv_write=zeros(1,tsteps);
 tic       
+last_timestep=tsteps;
 for i=1:tsteps  % moving in the time domain
     
     [U_next_LW, F_next_LW, Q_next_LW, v_next_LW, p_next_LW,rho_next_LW, T_next_LW, e_next_LW] = Lax_Wendroff_solver(U_prev, F_prev, Q_prev, x, A, c_v, gamma, R, dx, dt, sp_pts, lambda, d);
     [U_next_L, F_next_L, v_next_L, p_next_L, rho_next_L, T_next_L] = Infl_res_LHS(U_prev, A, c_v, gamma, R, dx, dt, p_res);
     [U_next_R, F_next_R, v_next_R, p_next_R, rho_next_R, T_next_R] = Outfl_RHS(U_prev, A, c_v, gamma, R, dx, dt, p_ref);
+%     [U_next_L, F_next_L, v_next_L, p_next_L, rho_next_L, T_next_L] = ClosedPipe_LHS(U_prev, A, c_v, gamma, R, dx, dt);
+%     [U_next_R, F_next_R, v_next_R, p_next_R, rho_next_R, T_next_R] = ClosedPipe_RHS(U_prev, A, c_v, gamma, R, dx, dt);
+    
     
     U_next=[U_next_L U_next_LW U_next_R];
     F_next=[F_next_L F_next_LW F_next_R];
@@ -92,6 +99,10 @@ for i=1:tsteps  % moving in the time domain
     T_next=[T_next_L T_next_LW T_next_R];
     %     U_next(isnan(U_next))=0;
     %     F_next(isnan(F_next))=0;
+    
+%     %OnlyWalls
+%      [U_next, F_next, Q_next, v_next, p_next, rho_next, T_next] = Lax_Wendroff_solver_wall(U_prev, F_prev, Q_prev, x, A, c_v, gamma, R, dx, dt, sp_pts, lambda, d);
+
     
     % Write the results of the current time step
         U_write(:,:,i)=U_next;
@@ -108,8 +119,9 @@ for i=1:tsteps  % moving in the time domain
         
      % Calculate residuals
         v_prev=U_prev(2,:)./U_prev(1,:);
-        dv_next=max(   abs(   (v_next-v_prev)/1     )    );
-        if dv_next<10^-2
+        dv_next=max(   abs(   (v_next-v_prev)/max(max(v_prev),max(v_next)))    );
+        if dv_next<1*10^-5
+        %if dv_next<1*10^-2    %wall!!!!!! 
             last_timestep=i;
             break 
         end
@@ -131,99 +143,12 @@ toc
 
 semilogy(t,dv_write);
 xlabel('$t~[s]$','interpreter','latex');
-ylabel('$\delta v~[s]$','interpreter','latex');
-title('Absolute changes of velocity');
+ylabel('$\delta v~[-]$','interpreter','latex');
+title('Relative changes of velocity');
 grid on
-tic
-
-%% Plotting and saving results
-h = figure('visible','off');
-x0=50;
-y0=50;
-width=800;
-height=720;
-set(h,'units','points','position',[x0,y0,width,height])
-axis tight manual % this ensures that getframe() returns a consistent size
-filename = 'p-v-rho-T.gif';
-filename2 = 'p-v-rho-T';
-vobj=VideoWriter(filename2, 'Motion JPEG AVI');
-vobj.FrameRate=60;
-vobj.Quality=70;
-open(vobj);
-for n = 1:1:last_timestep
-     suptitle(['Time: ' num2str(t(n)) ' [s]'])
-    subplot(2,2,1)
-        area(x, p_write(n,:))
-        %title('asd ')
-        xlim([xL xR])
-        xlabel('$x~[m]$','interpreter','latex')
-        ylim([p_ref*0.95 p_res*1.05])
-        ylabel('$p~[Pa]$','interpreter','latex')
-    subplot(2,2,2)
-        area(x, v_write(n,:))
-        %title(' ')
-        xlim([xL xR])
-        xlabel('$x~[m]$','interpreter','latex')
-        ylim([0 1.5*v_write(last_timestep,end)])
-        ylabel('$v~[\frac{m}{s}]$','interpreter','latex')
-    subplot(2,2,3)
-        area(x, rho_write(n,:))
-        %title('Density')
-        xlim([xL xR])
-        xlabel('$x~[m]$','interpreter','latex')
-        ylim([1 1.5*rho_write(last_timestep,end)])
-        ylabel('$\rho~[\frac{kg}{m^3}]$','interpreter','latex')
-    subplot(2,2,4)
-        area(x, T_write(n,:))
-        %title('Temperature')
-        xlim([xL xR])
-        xlabel('$x~[m]$','interpreter','latex')
-        ylim([250 350])
-        ylabel('$T~[K]$','interpreter','latex')
-   
-%     drawnow 
-      % Capture the plot as an image 
-      frame = getframe(h); 
-%       im = frame2im(frame); 
-%       [imind,cm] = rgb2ind(im,256); 
-%       % Write to the GIF File 
-%       if n == 1 
-%           imwrite(imind,cm,filename,'gif','Loopcount',inf); 
-%       else 
-%           imwrite(imind,cm,filename,'gif','WriteMode','append'); 
-%       end 
-      
-     writeVideo(vobj, frame);
-     cla(gca)
-end
- close(vobj)
-toc
-
-%% Determining the final (stationary) Mach number:
-% t_quasistat=floor(0.3*size(find(t),2));
-% M_st=v_write(t_quasistat,:)./sqrt(gamma*R*T_write(t_quasistat,:));
-M_st=v_write(size(find(t),2),:)./sqrt(gamma*R*T_write(size(find(t),2),:));
-M_st_av=mean(M_st);
+set(gca,'FontSize',14)
+filename = ['plots/residuals_dx_' num2str(dx) '.png'];
+%filename = ['plots/residuals_wall_' num2str(dx) '.png'];
+saveas(gcf,filename)
 close all
-M_cso=KiaramlasFanno(gamma, T(1)-273, p_res/10^5, p_ref/10^5, L, d*1000, lambda, R)
-figure1 = figure;
-axes1 = axes('Parent',figure1);
-hold(axes1,'on');
-plot(x,M_cso,'DisplayName','Numerical solution','MarkerFaceColor',[1 0 0],...
-    'MarkerSize',6,...
-    'Marker','o',...
-    'LineStyle','-',...
-    'LineWidth',1,...
-    'Color',[1 0 0]);
-plot(x,M_st,'DisplayName','Fanno Flow','MarkerSize',8,'Marker','x',...
-    'LineWidth',1,...
-    'Color',[0 0 1]);
-
-xlabel('$x~[m]$','Interpreter','latex');
-ylabel('$Ma~[-]$','Interpreter','latex');
-xlim([xL xR]);
-ylim([M_st(1)*0.9 M_st(end)*1.1]);
-box(axes1,'on');
-grid(axes1,'on');
-set(axes1,'FontSize',14);
-legend1 = legend(axes1,'show');
+tic

@@ -1,4 +1,4 @@
-function M_cso=KiaramlasFanno(kappa, Tt, pt, p0, L, D, lambda, R)
+function M_cso=KiaramlasFanno(kappa, Tt, pt, p0, L, D, lambda, R,dx)
 % close all
 % clc
 
@@ -41,21 +41,22 @@ A = D^2*pi/4;
 options = optimset('Display','off');
 M1 = fsolve(@(M1)machSzamKereses(M1,kappa,pt,p0,lambda,L,D),M10,options);
 [M2, xmax] = machSzamCsoVegen(M1,kappa,lambda,L,D);
-Fanno_param=zeros(1,21);
-M_cso=zeros(1,21);
-T_cso=zeros(1,21);
-P_cso=zeros(1,21);
-rho_cso=zeros(1,21);
-velocity_cso=zeros(1,21);
-P0_cso=zeros(1,21);
-fanno_cso=zeros(1,21);
-for kszi=1:21
-    Fanno_param(kszi)=lambda*(xmax-(kszi-1)*L/20)/D;
+Fanno_param=zeros(1,4/dx+1);
+M_cso=zeros(1,4/dx+1);
+T_cso=zeros(1,4/dx+1);
+P_cso=zeros(1,4/dx+1);
+rho_cso=zeros(1,4/dx+1);
+velocity_cso=zeros(1,4/dx+1);
+P0_cso=zeros(1,4/dx+1);
+fanno_cso=zeros(1,4/dx+1);
+for kszi=1:(1+4/dx)
+    Fanno_param(kszi)=lambda*(xmax-(kszi-1)*L/(4/dx))/D;
     [M_cso(kszi), T_cso(kszi), P_cso(kszi), rho_cso(kszi), velocity_cso(kszi), P0_cso(kszi), fanno_cso(kszi)] = flowfanno(kappa, Fanno_param(kszi), 'fannosub');
 end
 
 %Csõbéli Mach-szám alakulása
-csobeosztas=linspace(0,4,21);
+
+csobeosztas=0:dx:4;
 %figure(1)
 %plot(csobeosztas,M_cso)
 %grid on

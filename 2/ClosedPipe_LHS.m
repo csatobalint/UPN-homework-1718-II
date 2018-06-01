@@ -24,7 +24,7 @@ function [U_next_L, F_next_L, v_next_L, p_next_L, rho_next_L, T_next_L] = Closed
     v_next_L=0;                                            % wall boundary condition
     e_next_L=c_v*T_next_L+0.5*(v_next_L).^2;             
     p_next_L=p_prev(1)*(T_next_L/T_prev(1))^((gamma)/gamma-1);        % isentropic process along ?=const line
-    rho_next_L=p_next_L/(R*T_next_L);   
+    rho_next_L=p_next_L/(R*T_next_L);  
 
 %Updating the U_next & F_next matrices on the boundaries:
     U_next_L=zeros(3,1);
